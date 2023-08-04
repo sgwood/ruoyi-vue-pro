@@ -15,9 +15,9 @@ import java.util.List;
 @ToString(callSuper = true)
 public class ProductSpuCreateReqVO extends ProductSpuBaseVO {
 
-    /**
-     * SKU 数组
-     */
+    // ========== SKU 相关字段 =========
+
+    @Schema(description = "SKU 数组")
     @Valid
     private List<ProductSkuCreateOrUpdateReqVO> skus;
 

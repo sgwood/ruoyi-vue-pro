@@ -21,13 +21,17 @@ public interface SeckillProductMapper extends BaseMapperX<SeckillProductDO> {
         return selectList(SeckillProductDO::getActivityId, id);
     }
 
+    default List<SeckillProductDO> selectListByActivityId(Collection<Long> ids) {
+        return selectList(SeckillProductDO::getActivityId, ids);
+    }
+
     default List<SeckillProductDO> selectListBySkuIds(Collection<Long> skuIds) {
         return selectList(SeckillProductDO::getSkuId, skuIds);
     }
 
     default void updateTimeIdsByActivityId(Long id, List<Long> timeIds) {
         new LambdaUpdateChainWrapper<>(this)
-                .set(SeckillProductDO::getTimeIds, CollUtil.join(timeIds, ","))
+                .set(SeckillProductDO::getConfigIds, CollUtil.join(timeIds, ","))
                 .eq(SeckillProductDO::getActivityId, id)
                 .update();
     }
