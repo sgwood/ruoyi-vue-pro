@@ -1,26 +1,30 @@
 package cn.iocoder.yudao.module.trade.convert.aftersale;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.member.api.user.dto.MemberUserRespDTO;
 import cn.iocoder.yudao.module.pay.api.refund.dto.PayRefundCreateReqDTO;
 import cn.iocoder.yudao.module.product.api.property.dto.ProductPropertyValueDetailRespDTO;
+import cn.iocoder.yudao.module.trade.controller.admin.aftersale.vo.TradeAfterSaleDetailRespVO;
 import cn.iocoder.yudao.module.trade.controller.admin.aftersale.vo.TradeAfterSaleRespPageItemVO;
+import cn.iocoder.yudao.module.trade.controller.admin.aftersale.vo.log.TradeAfterSaleLogRespVO;
 import cn.iocoder.yudao.module.trade.controller.admin.base.member.user.MemberUserRespVO;
 import cn.iocoder.yudao.module.trade.controller.admin.base.product.property.ProductPropertyValueDetailRespVO;
+import cn.iocoder.yudao.module.trade.controller.admin.order.vo.TradeOrderBaseVO;
 import cn.iocoder.yudao.module.trade.controller.app.aftersale.vo.AppTradeAfterSaleCreateReqVO;
+import cn.iocoder.yudao.module.trade.controller.app.aftersale.vo.AppTradeAfterSaleRespVO;
 import cn.iocoder.yudao.module.trade.dal.dataobject.aftersale.TradeAfterSaleDO;
+import cn.iocoder.yudao.module.trade.dal.dataobject.aftersale.TradeAfterSaleLogDO;
+import cn.iocoder.yudao.module.trade.dal.dataobject.order.TradeOrderDO;
 import cn.iocoder.yudao.module.trade.dal.dataobject.order.TradeOrderItemDO;
+import cn.iocoder.yudao.module.trade.framework.aftersalelog.core.dto.TradeAfterSaleLogRespDTO;
 import cn.iocoder.yudao.module.trade.framework.order.config.TradeOrderProperties;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Mappings;
 import org.mapstruct.factory.Mappers;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static cn.iocoder.yudao.framework.common.util.collection.CollectionUtils.convertMap;
+import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface TradeAfterSaleConvert {
@@ -37,6 +41,8 @@ public interface TradeAfterSaleConvert {
     TradeAfterSaleDO convert(AppTradeAfterSaleCreateReqVO createReqVO, TradeOrderItemDO tradeOrderItem);
 
     @Mappings({
+            @Mapping(source = "afterSale.orderId", target = "merchantOrderId"),
+            @Mapping(source = "afterSale.id", target = "merchantRefundId"),
             @Mapping(source = "afterSale.applyReason", target = "reason"),
             @Mapping(source = "afterSale.refundPrice", target = "price")
     })
@@ -48,41 +54,36 @@ public interface TradeAfterSaleConvert {
     PageResult<TradeAfterSaleRespPageItemVO> convertPage(PageResult<TradeAfterSaleDO> page);
 
     default PageResult<TradeAfterSaleRespPageItemVO> convertPage(PageResult<TradeAfterSaleDO> pageResult,
-                                                                 Map<Long, MemberUserRespDTO> memberUsers, List<ProductPropertyValueDetailRespDTO> propertyValueDetails) {
-        PageResult<TradeAfterSaleRespPageItemVO> pageVOResult = convertPage(pageResult);
-        // 处理会员 + 商品属性等关联信息
-        Map<Long, ProductPropertyValueDetailRespDTO> propertyValueDetailMap = convertMap(propertyValueDetails, ProductPropertyValueDetailRespDTO::getValueId);
-        for (int i = 0; i < pageResult.getList().size(); i++) {
-            TradeAfterSaleRespPageItemVO afterSaleVO = pageVOResult.getList().get(i);
-            TradeAfterSaleDO afterSaleDO = pageResult.getList().get(i);
-            // 会员
-            afterSaleVO.setUser(convert(memberUsers.get(afterSaleDO.getUserId())));
-            // 商品属性
-            if (CollUtil.isNotEmpty(afterSaleDO.getProperties())) {
-                afterSaleVO.setProperties(new ArrayList<>(afterSaleDO.getProperties().size()));
-                // 遍历每个 properties，设置到 TradeOrderPageItemRespVO.Item 中
-                afterSaleDO.getProperties().forEach(property -> {
-                    ProductPropertyValueDetailRespDTO propertyValueDetail = propertyValueDetailMap.get(property.getValueId());
-                    if (propertyValueDetail == null) {
-                        return;
-                    }
-                    afterSaleVO.getProperties().add(convert(propertyValueDetail));
-                });
-            }
-        }
-        return pageVOResult;
+                                                                 Map<Long, MemberUserRespDTO> memberUsers) {
+        PageResult<TradeAfterSaleRespPageItemVO> voPageResult = convertPage(pageResult);
+        // 处理会员
+        voPageResult.getList().forEach(afterSale -> afterSale.setUser(
+                convert(memberUsers.get(afterSale.getUserId()))));
+        return voPageResult;
     }
 
     ProductPropertyValueDetailRespVO convert(ProductPropertyValueDetailRespDTO bean);
 
-    default Set<Long> convertPropertyValueIds(List<TradeAfterSaleDO> list) {
-        if (CollUtil.isEmpty(list)) {
-            return new HashSet<>();
-        }
-        return list.stream().filter(item -> item.getProperties() != null)
-                .flatMap(p -> p.getProperties().stream()) // 遍历多个 Property 属性
-                .map(TradeOrderItemDO.Property::getValueId) // 将每个 Property 转换成对应的 propertyId，最后形成集合
-                .collect(Collectors.toSet());
+    AppTradeAfterSaleRespVO convert(TradeAfterSaleDO bean);
+
+    PageResult<AppTradeAfterSaleRespVO> convertPage02(PageResult<TradeAfterSaleDO> page);
+
+    List<TradeAfterSaleLogRespDTO> convertList(List<TradeAfterSaleLogDO> list);
+    
+    default TradeAfterSaleDetailRespVO convert(TradeAfterSaleDO afterSale, TradeOrderDO order, List<TradeOrderItemDO> orderItems,
+                                               MemberUserRespDTO user, List<TradeAfterSaleLogRespDTO> logs) {
+        TradeAfterSaleDetailRespVO respVO = convert(afterSale, orderItems);
+        // 处理用户信息
+        respVO.setUser(convert(user));
+        // 处理订单信息
+        respVO.setOrder(convert(order));
+        // 处理售后日志
+        respVO.setLogs(convertList1(logs));
+        return respVO;
     }
+    List<TradeAfterSaleLogRespVO> convertList1(List<TradeAfterSaleLogRespDTO> list);
+    @Mapping(target = "id", source = "afterSale.id")
+    TradeAfterSaleDetailRespVO convert(TradeAfterSaleDO afterSale, List<TradeOrderItemDO> orderItems);
+    TradeOrderBaseVO convert(TradeOrderDO order);
 
 }

@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.trade.service.delivery;
 
+import cn.iocoder.yudao.framework.common.enums.CommonStatusEnum;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.module.trade.controller.admin.delivery.vo.express.DeliveryExpressCreateReqVO;
 import cn.iocoder.yudao.module.trade.controller.admin.delivery.vo.express.DeliveryExpressExportReqVO;
@@ -9,11 +10,10 @@ import cn.iocoder.yudao.module.trade.convert.delivery.DeliveryExpressConvert;
 import cn.iocoder.yudao.module.trade.dal.dataobject.delivery.DeliveryExpressDO;
 import cn.iocoder.yudao.module.trade.dal.mysql.delivery.DeliveryExpressMapper;
 import org.springframework.stereotype.Service;
-import javax.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
 
-import java.util.*;
-
+import javax.annotation.Resource;
+import java.util.List;
 
 import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.iocoder.yudao.module.trade.enums.ErrorCodeConstants.*;
@@ -85,8 +85,15 @@ public class DeliveryExpressServiceImpl implements DeliveryExpressService {
     }
 
     @Override
-    public List<DeliveryExpressDO> getDeliveryExpressList(Collection<Long> ids) {
-        return deliveryExpressMapper.selectBatchIds(ids);
+    public DeliveryExpressDO validateDeliveryExpress(Long id) {
+        DeliveryExpressDO deliveryExpress = deliveryExpressMapper.selectById(id);
+        if (deliveryExpress == null) {
+            throw exception(EXPRESS_NOT_EXISTS);
+        }
+        if (deliveryExpress.getStatus().equals(CommonStatusEnum.DISABLE.getStatus())) {
+            throw exception(EXPRESS_STATUS_NOT_ENABLE);
+        }
+        return deliveryExpress;
     }
 
     @Override
@@ -97,6 +104,11 @@ public class DeliveryExpressServiceImpl implements DeliveryExpressService {
     @Override
     public List<DeliveryExpressDO> getDeliveryExpressList(DeliveryExpressExportReqVO exportReqVO) {
         return deliveryExpressMapper.selectList(exportReqVO);
+    }
+
+    @Override
+    public List<DeliveryExpressDO> getDeliveryExpressListByStatus(Integer status) {
+        return deliveryExpressMapper.selectListByStatus(status);
     }
 
 }

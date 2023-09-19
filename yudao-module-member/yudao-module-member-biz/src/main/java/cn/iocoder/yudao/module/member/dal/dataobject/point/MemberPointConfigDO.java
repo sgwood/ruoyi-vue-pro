@@ -6,14 +6,12 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.*;
 
-import java.math.BigDecimal;
-
 /**
  * 会员积分配置 DO
  *
  * @author QingX
  */
-@TableName("member_point_config")
+@TableName(value = "member_point_config", autoResultMap = true)
 @KeySequence("member_point_config_seq") // 用于 Oracle、PostgreSQL、Kingbase、DB2、H2 数据库的主键自增。如果是 MySQL 等数据库，可不写。
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -27,7 +25,7 @@ public class MemberPointConfigDO extends BaseDO {
      * 自增主键
      */
     @TableId
-    private Integer id;
+    private Long id;
     /**
      * 积分抵扣开关
      */
@@ -37,7 +35,7 @@ public class MemberPointConfigDO extends BaseDO {
      *
      * 1 积分抵扣多少分
      */
-    private BigDecimal tradeDeductUnitPrice;
+    private Integer tradeDeductUnitPrice;
     /**
      * 积分抵扣最大值
      */
