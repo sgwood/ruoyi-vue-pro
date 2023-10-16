@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.trade.controller.app.order.vo;
 
+import cn.hutool.core.util.ObjUtil;
 import cn.iocoder.yudao.framework.common.validation.InEnum;
 import cn.iocoder.yudao.framework.common.validation.Mobile;
 import cn.iocoder.yudao.module.trade.enums.delivery.DeliveryTypeEnum;
@@ -16,6 +17,7 @@ import java.util.List;
 
 @Schema(description = "用户 App - 交易订单结算 Request VO")
 @Data
+@Valid
 public class AppTradeOrderSettlementReqVO {
 
     @Schema(description = "商品项数组", requiredMode = Schema.RequiredMode.REQUIRED)
@@ -25,12 +27,12 @@ public class AppTradeOrderSettlementReqVO {
     @Schema(description = "优惠劵编号", example = "1024")
     private Long couponId;
 
-    @Schema(description = "是否使用积分", required = true, example = "true")
+    @Schema(description = "是否使用积分", requiredMode = Schema.RequiredMode.REQUIRED, example = "true")
     @NotNull(message = "是否使用积分不能为空")
     private Boolean pointStatus;
 
     // ========== 配送相关相关字段 ==========
-    @Schema(description = "配送方式", required = true, example = "1")
+    @Schema(description = "配送方式", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     @InEnum(value = DeliveryTypeEnum.class, message = "配送方式不正确")
     private Integer deliveryType;
 
@@ -50,7 +52,6 @@ public class AppTradeOrderSettlementReqVO {
     private Long seckillActivityId;
 
     // ========== 拼团活动相关字段 ==========
-    // TODO @puhui999：是不是拼团记录的编号哈？
     @Schema(description = "拼团活动编号", example = "1024")
     private Long combinationActivityId;
 
@@ -58,9 +59,19 @@ public class AppTradeOrderSettlementReqVO {
     private Long combinationHeadId;
 
     // ========== 砍价活动相关字段 ==========
-    // TODO @puhui999：是不是砍价记录的编号哈？
-    @Schema(description = "砍价活动编号", example = "123")
-    private Long bargainActivityId;
+    @Schema(description = "砍价记录编号", example = "123")
+    private Long bargainRecordId;
+
+    @AssertTrue(message = "活动商品每次只能购买一种规格")
+    @JsonIgnore
+    public boolean isValidActivityItems() {
+        // 校验是否是活动订单
+        if (ObjUtil.isAllEmpty(seckillActivityId, combinationActivityId, combinationHeadId, bargainRecordId)) {
+            return true;
+        }
+        // 校验订单项是否超出
+        return items.size() == 1;
+    }
 
     @Data
     @Schema(description = "用户 App - 商品项")
@@ -68,7 +79,9 @@ public class AppTradeOrderSettlementReqVO {
     public static class Item {
 
         @Schema(description = "商品 SKU 编号", example = "2048")
+        @NotNull(message = "商品 SKU 编号不能为空")
         private Long skuId;
+
         @Schema(description = "购买数量", example = "1")
         @Min(value = 1, message = "购买数量最小值为 {value}")
         private Integer count;
