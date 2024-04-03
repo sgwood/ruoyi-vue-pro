@@ -5,9 +5,9 @@ import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.common.util.collection.CollectionUtils;
 import cn.iocoder.yudao.framework.common.util.string.StrUtils;
-import cn.iocoder.yudao.framework.dict.core.util.DictFrameworkUtils;
+import cn.iocoder.yudao.framework.dict.core.DictFrameworkUtils;
 import cn.iocoder.yudao.framework.ip.core.utils.AreaUtils;
-import cn.iocoder.yudao.module.member.api.address.dto.AddressRespDTO;
+import cn.iocoder.yudao.module.member.api.address.dto.MemberAddressRespDTO;
 import cn.iocoder.yudao.module.member.api.user.dto.MemberUserRespDTO;
 import cn.iocoder.yudao.module.pay.api.order.dto.PayOrderCreateReqDTO;
 import cn.iocoder.yudao.module.pay.enums.DictTypeConstants;
@@ -69,8 +69,7 @@ public interface TradeOrderConvert {
             @Mapping(source = "calculateRespBO.price.vipPrice", target = "vipPrice"),
             @Mapping(source = "calculateRespBO.price.payPrice", target = "payPrice")
     })
-    TradeOrderDO convert(Long userId, String userIp, AppTradeOrderCreateReqVO createReqVO,
-                         TradePriceCalculateRespBO calculateRespBO);
+    TradeOrderDO convert(Long userId, AppTradeOrderCreateReqVO createReqVO, TradePriceCalculateRespBO calculateRespBO);
 
     TradeOrderRespDTO convert(TradeOrderDO orderDO);
 
@@ -124,12 +123,16 @@ public interface TradeOrderConvert {
             TradeOrderPageItemRespVO orderVO = convert(order, xOrderItems);
             // 处理收货地址
             orderVO.setReceiverAreaName(AreaUtils.format(order.getReceiverAreaId()));
-            // 增加用户昵称
-            orderVO.setUser(memberUserMap.get(orderVO.getUserId()));
+            // 增加用户信息
+            orderVO.setUser(convertUser(memberUserMap.get(orderVO.getUserId())));
+            // 增加推广人信息
+            orderVO.setBrokerageUser(convertUser(memberUserMap.get(orderVO.getBrokerageUserId())));
             return orderVO;
         });
         return new PageResult<>(orderVOs, pageResult.getTotal());
     }
+
+    MemberUserRespVO convertUser(MemberUserRespDTO memberUserRespDTO);
 
     TradeOrderPageItemRespVO convert(TradeOrderDO order, List<TradeOrderItemDO> items);
 
@@ -237,7 +240,7 @@ public interface TradeOrderConvert {
         return reqBO;
     }
 
-    default AppTradeOrderSettlementRespVO convert(TradePriceCalculateRespBO calculate, AddressRespDTO address) {
+    default AppTradeOrderSettlementRespVO convert(TradePriceCalculateRespBO calculate, MemberAddressRespDTO address) {
         AppTradeOrderSettlementRespVO respVO = convert0(calculate, address);
         if (address != null) {
             respVO.getAddress().setAreaName(AreaUtils.format(address.getAreaId()));
@@ -245,7 +248,7 @@ public interface TradeOrderConvert {
         return respVO;
     }
 
-    AppTradeOrderSettlementRespVO convert0(TradePriceCalculateRespBO calculate, AddressRespDTO address);
+    AppTradeOrderSettlementRespVO convert0(TradePriceCalculateRespBO calculate, MemberAddressRespDTO address);
 
     List<AppOrderExpressTrackRespDTO> convertList02(List<ExpressTrackRespDTO> list);
 

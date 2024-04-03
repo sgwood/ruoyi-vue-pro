@@ -6,7 +6,6 @@ import cn.iocoder.yudao.module.system.api.dept.dto.DeptRespDTO;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * 部门 API 接口
@@ -46,9 +45,17 @@ public interface DeptApi {
      * @param ids 部门编号数组
      * @return 部门 Map
      */
-    default Map<Long, DeptRespDTO> getDeptMap(Set<Long> ids) {
+    default Map<Long, DeptRespDTO> getDeptMap(Collection<Long> ids) {
         List<DeptRespDTO> list = getDeptList(ids);
         return CollectionUtils.convertMap(list, DeptRespDTO::getId);
     }
+
+    /**
+     * 获得指定部门的所有子部门
+     *
+     * @param id 部门编号
+     * @return 子部门列表
+     */
+    List<DeptRespDTO> getChildDeptList(Long id);
 
 }

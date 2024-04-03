@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 
 /**
@@ -119,6 +120,52 @@ public class LocalDateTimeUtils {
      */
     public static LocalDateTime endOfMonth(LocalDateTime date) {
         return date.with(TemporalAdjusters.lastDayOfMonth()).with(LocalTime.MAX);
+    }
+
+    /**
+     * 获取指定日期到现在过了几天，如果指定日期在当前日期之后，获取结果为负
+     *
+     * @param dateTime 日期
+     * @return 相差天数
+     */
+    public static Long between(LocalDateTime dateTime) {
+        return LocalDateTimeUtil.between(dateTime, LocalDateTime.now(), ChronoUnit.DAYS);
+    }
+
+    /**
+     * 获取今天的开始时间
+     *
+     * @return 今天
+     */
+    public static LocalDateTime getToday() {
+        return LocalDateTimeUtil.beginOfDay(LocalDateTime.now());
+    }
+
+    /**
+     * 获取昨天的开始时间
+     *
+     * @return 昨天
+     */
+    public static LocalDateTime getYesterday() {
+        return LocalDateTimeUtil.beginOfDay(LocalDateTime.now().minusDays(1));
+    }
+
+    /**
+     * 获取本月的开始时间
+     *
+     * @return 本月
+     */
+    public static LocalDateTime getMonth() {
+        return beginOfMonth(LocalDateTime.now());
+    }
+
+    /**
+     * 获取本年的开始时间
+     *
+     * @return 本年
+     */
+    public static LocalDateTime getYear() {
+        return LocalDateTime.now().with(TemporalAdjusters.firstDayOfYear()).with(LocalTime.MIN);
     }
 
 }

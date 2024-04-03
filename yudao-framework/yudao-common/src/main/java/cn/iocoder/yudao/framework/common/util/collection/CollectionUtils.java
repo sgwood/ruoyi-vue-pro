@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.*;
 import java.util.function.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
 
@@ -72,6 +73,23 @@ public class CollectionUtils {
         return from.stream().filter(filter).map(func).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
+    public static <T, U> List<U> convertListByFlatMap(Collection<T> from,
+                                                      Function<T, ? extends Stream<? extends U>> func) {
+        if (CollUtil.isEmpty(from)) {
+            return new ArrayList<>();
+        }
+        return from.stream().flatMap(func).filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    public static <T, U, R> List<R> convertListByFlatMap(Collection<T> from,
+                                                         Function<? super T, ? extends U> mapper,
+                                                         Function<U, ? extends Stream<? extends R>> func) {
+        if (CollUtil.isEmpty(from)) {
+            return new ArrayList<>();
+        }
+        return from.stream().map(mapper).flatMap(func).filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
     public static <K, V> List<V> mergeValuesFromMap(Map<K, List<V>> map) {
         return map.values()
                 .stream()
@@ -98,6 +116,23 @@ public class CollectionUtils {
             return new HashMap<>();
         }
         return from.stream().filter(filter).collect(Collectors.toMap(keyFunc, v -> v));
+    }
+
+    public static <T, U> Set<U> convertSetByFlatMap(Collection<T> from,
+                                                    Function<T, ? extends Stream<? extends U>> func) {
+        if (CollUtil.isEmpty(from)) {
+            return new HashSet<>();
+        }
+        return from.stream().flatMap(func).filter(Objects::nonNull).collect(Collectors.toSet());
+    }
+
+    public static <T, U, R> Set<R> convertSetByFlatMap(Collection<T> from,
+                                                       Function<? super T, ? extends U> mapper,
+                                                       Function<U, ? extends Stream<? extends R>> func) {
+        if (CollUtil.isEmpty(from)) {
+            return new HashSet<>();
+        }
+        return from.stream().map(mapper).flatMap(func).filter(Objects::nonNull).collect(Collectors.toSet());
     }
 
     public static <T, K> Map<K, T> convertMap(Collection<T> from, Function<T, K> keyFunc) {
@@ -222,18 +257,22 @@ public class CollectionUtils {
         return !CollectionUtil.isEmpty(from) ? from.get(0) : null;
     }
 
-    public static <T> T findFirst(List<T> from, Predicate<T> predicate) {
+    public static <T> T findFirst(Collection<T> from, Predicate<T> predicate) {
+        return findFirst(from, predicate, Function.identity());
+    }
+
+    public static <T, U> U findFirst(Collection<T> from, Predicate<T> predicate, Function<T, U> func) {
         if (CollUtil.isEmpty(from)) {
             return null;
         }
-        return from.stream().filter(predicate).findFirst().orElse(null);
+        return from.stream().filter(predicate).findFirst().map(func).orElse(null);
     }
 
     public static <T, V extends Comparable<? super V>> V getMaxValue(Collection<T> from, Function<T, V> valueFunc) {
         if (CollUtil.isEmpty(from)) {
             return null;
         }
-        assert from.size() > 0; // 断言，避免告警
+        assert !from.isEmpty(); // 断言，避免告警
         T t = from.stream().max(Comparator.comparing(valueFunc)).get();
         return valueFunc.apply(t);
     }
@@ -249,11 +288,16 @@ public class CollectionUtils {
 
     public static <T, V extends Comparable<? super V>> V getSumValue(List<T> from, Function<T, V> valueFunc,
                                                                      BinaryOperator<V> accumulator) {
+        return getSumValue(from, valueFunc, accumulator, null);
+    }
+
+    public static <T, V extends Comparable<? super V>> V getSumValue(Collection<T> from, Function<T, V> valueFunc,
+                                                                     BinaryOperator<V> accumulator, V defaultValue) {
         if (CollUtil.isEmpty(from)) {
-            return null;
+            return defaultValue;
         }
-        assert from.size() > 0; // 断言，避免告警
-        return from.stream().map(valueFunc).reduce(accumulator).get();
+        assert !from.isEmpty(); // 断言，避免告警
+        return from.stream().map(valueFunc).filter(Objects::nonNull).reduce(accumulator).orElse(defaultValue);
     }
 
     public static <T> void addIfNotNull(Collection<T> coll, T item) {
@@ -263,8 +307,12 @@ public class CollectionUtils {
         coll.add(item);
     }
 
-    public static <T> Collection<T> singleton(T deptId) {
-        return deptId == null ? Collections.emptyList() : Collections.singleton(deptId);
+    public static <T> Collection<T> singleton(T obj) {
+        return obj == null ? Collections.emptyList() : Collections.singleton(obj);
+    }
+
+    public static <T> List<T> newArrayList(List<List<T>> list) {
+        return list.stream().flatMap(Collection::stream).collect(Collectors.toList());
     }
 
 }
