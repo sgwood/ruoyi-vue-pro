@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.member.controller.app.social;
 
+import cn.hutool.core.codec.Base64;
 import cn.iocoder.yudao.framework.common.enums.UserTypeEnum;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
@@ -7,13 +8,16 @@ import cn.iocoder.yudao.framework.security.core.annotations.PreAuthenticated;
 import cn.iocoder.yudao.module.member.controller.app.social.vo.AppSocialUserBindReqVO;
 import cn.iocoder.yudao.module.member.controller.app.social.vo.AppSocialUserRespVO;
 import cn.iocoder.yudao.module.member.controller.app.social.vo.AppSocialUserUnbindReqVO;
+import cn.iocoder.yudao.module.member.controller.app.social.vo.AppSocialWxQrcodeReqVO;
+import cn.iocoder.yudao.module.system.api.social.SocialClientApi;
 import cn.iocoder.yudao.module.system.api.social.SocialUserApi;
 import cn.iocoder.yudao.module.system.api.social.dto.SocialUserBindReqDTO;
 import cn.iocoder.yudao.module.system.api.social.dto.SocialUserRespDTO;
 import cn.iocoder.yudao.module.system.api.social.dto.SocialUserUnbindReqDTO;
+import cn.iocoder.yudao.module.system.api.social.dto.SocialWxQrcodeReqDTO;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,6 +35,8 @@ public class AppSocialUserController {
 
     @Resource
     private SocialUserApi socialUserApi;
+    @Resource
+    private SocialClientApi socialClientApi;
 
     @PostMapping("/bind")
     @Operation(summary = "社交绑定，使用 code 授权码")
@@ -58,6 +64,13 @@ public class AppSocialUserController {
     public CommonResult<AppSocialUserRespVO> getSocialUser(@RequestParam("type") Integer type) {
         SocialUserRespDTO socialUser = socialUserApi.getSocialUserByUserId(UserTypeEnum.MEMBER.getValue(), getLoginUserId(), type);
         return success(BeanUtils.toBean(socialUser, AppSocialUserRespVO.class));
+    }
+
+    @PostMapping("/wxa-qrcode")
+    @Operation(summary = "获得微信小程序码(base64 image)")
+    public CommonResult<String> getWxaQrcode(@RequestBody @Valid AppSocialWxQrcodeReqVO reqVO) {
+        byte[] wxQrcode = socialClientApi.getWxaQrcode(BeanUtils.toBean(reqVO, SocialWxQrcodeReqDTO.class));
+        return success(Base64.encode(wxQrcode));
     }
 
 }
