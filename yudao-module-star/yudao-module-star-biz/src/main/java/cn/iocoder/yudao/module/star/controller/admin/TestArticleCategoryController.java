@@ -1,4 +1,4 @@
-package cn.iocoder.yudao.module.star.controller.admin.powerbi;
+package cn.iocoder.yudao.module.star.controller.admin;
 
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -6,16 +6,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
-
-/**
- *  下钻控制器
- */
 @RestController
-@RequestMapping("/field/test")
-public class FieldController {
+@RequestMapping("/app/test")
+public class TestArticleCategoryController {
 
     @GetMapping("/get")
     public CommonResult<String> test() {
-        return success("ok34");
+        return success("ok");
     }
 }
