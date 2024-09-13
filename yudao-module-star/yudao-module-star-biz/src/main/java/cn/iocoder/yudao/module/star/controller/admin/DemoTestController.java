@@ -18,6 +18,7 @@ public class DemoTestController {
     @GetMapping("/get")
     @Operation(summary = "获取 test 信息")
     public CommonResult<String> get() {
+        System.out.println("say hello");
         return success("true");
     }
 }
