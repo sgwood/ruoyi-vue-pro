@@ -18,7 +18,8 @@ public class DemoTestController {
     @GetMapping("/get")
     @Operation(summary = "获取 test 信息")
     public CommonResult<String> get() {
-        System.out.println("say hello32");
-        return success("false");
+        System.out.println("say hello3245");
+        // return success("false");
+        return success("say hello21333 abc ");
     }
 }
