@@ -39,4 +39,9 @@ public class DataServiceImplTest extends BaseDbUnitTest {
         assertNotNull(reponse);
     }
 
+    @Test
+    public void testCrawlAndSaveInstitutions() {
+        institutionCrawlerService.crawlAndSaveInstitutions();
+    }
+
 }
