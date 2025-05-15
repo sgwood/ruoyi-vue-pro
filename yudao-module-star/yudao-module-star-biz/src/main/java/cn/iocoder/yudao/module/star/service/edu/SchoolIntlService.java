@@ -2,6 +2,8 @@ package cn.iocoder.yudao.module.star.service.edu;
 
 import cn.iocoder.yudao.module.star.dal.dataobject.edu.Institution;
 import cn.iocoder.yudao.module.star.dal.dataobject.edu.InstitutionListResponse;
+import cn.iocoder.yudao.module.star.dal.dataobject.edu.SchoolIntl;
+import cn.iocoder.yudao.module.star.dal.dataobject.edu.SchoolListResponse;
 import cn.iocoder.yudao.module.star.dal.mysql.edu.InstitutionEntity;
 import cn.iocoder.yudao.module.star.dal.mysql.edu.InstitutionMapper;
 import cn.iocoder.yudao.module.star.dal.mysql.edu.SchoolIntlEntity;
@@ -18,11 +20,12 @@ public class SchoolIntlService {
     @Autowired
     private SchoolIntlMapper schoolIntlMapper;
 
-    private static final String API_URL = "https://data.xinxueshuo.cn/nsi-1.0/new/school/list.do?searchKey=&pageNum=1&pageSize=2000";
+    private static final String API_URL = "https://data.xinxueshuo.cn/nsi-1.0/new/school/list.do?searchKey=&pageNum=1&pageSize=200";
 
-    public InstitutionListResponse getData() {
+    public SchoolListResponse getData() {
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<InstitutionListResponse> response = restTemplate.getForEntity(API_URL, InstitutionListResponse.class);
+
+        ResponseEntity<SchoolListResponse> response = restTemplate.getForEntity(API_URL, SchoolListResponse.class);
         if (response.getStatusCode().is2xxSuccessful()) {
             return response.getBody();
         } else {
@@ -31,15 +34,15 @@ public class SchoolIntlService {
     }
 
     public void saveData() {
-        InstitutionListResponse response = getData();
-        if (response != null && response.getInstitutionList() != null) {
-            List<Institution> institutions = response.getInstitutionList();
-            for (Institution item : institutions) {
+        SchoolListResponse response = getData();
+        if (response != null && response.getSchoolListData().getSchoolIntlList() != null) {
+            List<SchoolIntl> dataList = response.getSchoolListData().getSchoolIntlList();
+            for (SchoolIntl item : dataList) {
 
 
                 // 创建实体并保存到数据库
                 SchoolIntlEntity bo = new SchoolIntlEntity();
-                bo.setName(item.getName());
+                bo.setSchoolName(item.getSchoolName());
                 bo.setId(item.getId());
 
 

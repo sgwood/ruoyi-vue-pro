@@ -2,6 +2,7 @@ package cn.iocoder.yudao.module.star.controller.admin.edu;
 
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.module.star.dal.dataobject.edu.InstitutionListResponse;
+import cn.iocoder.yudao.module.star.dal.dataobject.edu.SchoolListResponse;
 import cn.iocoder.yudao.module.star.service.edu.InstitutionCrawlerService;
 import cn.iocoder.yudao.module.star.service.edu.SchoolIntlService;
 import org.springframework.validation.annotation.Validated;
@@ -20,8 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
             this.schoolIntlService = schoolIntlService;
         }
 
-        @GetMapping("/get")
-        public InstitutionListResponse getInstitutions() {
+        @GetMapping("/list")
+        public SchoolListResponse getInstitutions() {
             return schoolIntlService.getData();
         }
     @PostMapping("/save")

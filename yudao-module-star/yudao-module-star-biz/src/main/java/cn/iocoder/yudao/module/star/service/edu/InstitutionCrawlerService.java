@@ -26,6 +26,7 @@ public class InstitutionCrawlerService {
     public InstitutionListResponse crawlInstitutions() {
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<InstitutionListResponse> response = restTemplate.getForEntity(API_URL, InstitutionListResponse.class);
+
         if (response.getStatusCode().is2xxSuccessful()) {
             return response.getBody();
         } else {
