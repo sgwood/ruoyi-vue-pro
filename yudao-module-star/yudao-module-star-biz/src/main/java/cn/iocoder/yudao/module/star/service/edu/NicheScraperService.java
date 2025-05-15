@@ -24,9 +24,9 @@ import cn.iocoder.yudao.module.star.dal.mysql.edu.NicheMapper;
 
 @Service
 public class NicheScraperService {
-    private static final int START_PAGE = 1;
-    private static final int END_PAGE = 1;
-    private static final int DELAY_SECONDS = 20;
+    private static final int START_PAGE = 44;
+    private static final int END_PAGE = 300;
+    private static final int DELAY_SECONDS = 30;
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final String DOWNLOAD_DIR = System.getProperty("user.home") + "/Downloads/niche";
 
