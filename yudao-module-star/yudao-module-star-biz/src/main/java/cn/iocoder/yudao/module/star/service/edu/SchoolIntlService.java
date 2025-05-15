@@ -20,7 +20,7 @@ public class SchoolIntlService {
     @Autowired
     private SchoolIntlMapper schoolIntlMapper;
 
-    private static final String API_URL = "https://data.xinxueshuo.cn/nsi-1.0/new/school/list.do?searchKey=&pageNum=1&pageSize=200";
+    private static final String API_URL = "https://data.xinxueshuo.cn/nsi-1.0/new/school/list.do?searchKey=&pageNum=1&pageSize=2000";
 
     public SchoolListResponse getData() {
         RestTemplate restTemplate = new RestTemplate();
