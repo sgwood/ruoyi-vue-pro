@@ -31,6 +31,7 @@ public class DataServiceImplTest extends BaseDbUnitTest {
     @Resource
     private InstitutionCrawlerService institutionCrawlerService;
 
+
     @Test
     public void testGetData() {
         InstitutionListResponse reponse=institutionCrawlerService.crawlInstitutions();
