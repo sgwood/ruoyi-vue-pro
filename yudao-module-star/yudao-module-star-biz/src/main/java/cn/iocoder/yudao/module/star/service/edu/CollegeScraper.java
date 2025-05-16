@@ -35,7 +35,7 @@ public class CollegeScraper {
             System.out.println("从数据库获取了 " + collegeUrls.size() + " 条院校数据");
 
             // 逐条处理
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < collegeUrls.size(); i++) {
                 String url = collegeUrls.get(i);
                 System.out.println("\n=== 开始处理第 " + (i + 1) + " 条院校: " + url + " ===");
 
@@ -163,18 +163,21 @@ public class CollegeScraper {
                 // 构建完整的请求头（模拟Chrome浏览器）
                 Connection connection = Jsoup.connect(url)
                         .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36")
-                        .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8")
-                        .header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
                         .header("Accept-Encoding", "gzip, deflate, br")
-                        .header("Cache-Control", "no-cache")
-                        .header("Pragma", "no-cache")
-                        .header("Sec-Ch-Ua", "\"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\"")
-                        .header("Sec-Ch-Ua-Mobile", "?0")
-                        .header("Sec-Fetch-Dest", "document")
-                        .header("Sec-Fetch-Mode", "navigate")
-                        .header("Sec-Fetch-Site", "same-origin")
-                        .header("Sec-Fetch-User", "?1")
-                        .header("Upgrade-Insecure-Requests", "1")
+                        .header("Referer", "https://www.niche.com/")
+                        .header("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
+                        .header("accept-language", "zh-US,zh-CN;q=0.9,zh;q=0.8")
+                        .header("cache-control", "no-cache")
+                        .header("pragma", "no-cache")
+                        .header("priority", "u=0, i")
+                        .header("sec-ch-ua", "\"Chromium\";v=\"136\", \"Google Chrome\";v=\"136\", \"Not.A/Brand\";v=\"99\"")
+                        .header("sec-ch-ua-mobile", "?0")
+                        .header("sec-ch-ua-platform", "\"macOS\"")
+                        .header("sec-fetch-dest", "document")
+                        .header("sec-fetch-mode", "navigate")
+                        .header("sec-fetch-site", "none")
+                        .header("sec-fetch-user", "?1")
+                        .header("upgrade-insecure-requests", "1")
                         .timeout(15000); // 延长超时时间
 
                 // 执行请求
