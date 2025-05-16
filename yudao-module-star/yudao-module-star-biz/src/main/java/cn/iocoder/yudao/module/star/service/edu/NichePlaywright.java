@@ -15,16 +15,16 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class CollegeScraperPlaywright {
+public class NichePlaywright {
     // 数据库连接参数
     private static final String DB_URL = "jdbc:mysql://sgwood.cn:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true";
     private static final String DB_USER = "sgwood";
     private static final String DB_PASSWORD = "stargold";
 
     // 爬虫配置
-    private static final String BASE_URL_TEMPLATE = "https://m.sogou.com/openapi/h5/university/home?school=%s";
-    private static final String OUTPUT_DIR_TEMPLATE = System.getProperty("user.home") + "/Downloads/uni/%s/";
-    private static final int DELAY_SECONDS = 5;
+    private static final String BASE_URL_TEMPLATE = "https://www.niche.com/colleges/%s/";
+    private static final String OUTPUT_DIR_TEMPLATE = System.getProperty("user.home") + "/Downloads/test/%s/";
+    private static final int DELAY_SECONDS = 20;
     private static final int MAX_RETRIES = 3;
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -33,7 +33,7 @@ public class CollegeScraperPlaywright {
         try (Playwright playwright = Playwright.create()) {
             // 创建浏览器实例（使用 Chromium）
             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-                    .setHeadless(true) // 设置为 false 可查看浏览器操作过程
+                    .setHeadless(false) // 设置为 false 可查看浏览器操作过程
                     .setSlowMo(500));  // 减慢操作速度，便于调试
 
             // 创建上下文（类似浏览器的新会话）
@@ -41,24 +41,31 @@ public class CollegeScraperPlaywright {
                     .setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36")
                     .setViewportSize(1920, 1080));
 
-            // 获取待爬取的院校名称
-            List<String> schoolNames = fetchSchoolNamesFromDatabase();
-            System.out.println("从数据库获取了 " + schoolNames.size() + " 条院校数据");
+            // 获取待爬取的院校URL
+            List<String> collegeUrls = fetchCollegeUrlsFromDatabase();
+            System.out.println("从数据库获取了 " + collegeUrls.size() + " 条院校数据");
 
             // 逐条处理
-            for (int i = 0; i < schoolNames.size(); i++) {
-                String schoolName = schoolNames.get(i);
-                System.out.println("\n=== 开始处理第 " + (i + 1) + " 条院校: " + schoolName + " ===");
+            for (int i = 0; i < collegeUrls.size(); i++) {
+                String url = collegeUrls.get(i);
+                System.out.println("\n=== 开始处理第 " + (i + 1) + " 条院校: " + url + " ===");
+
+                // 从URL中提取院校名称
+                String collegeName = extractCollegeNameFromUrl(url);
+                if (collegeName == null || collegeName.isEmpty()) {
+                    System.err.println("跳过: 无法从URL中提取院校名称");
+                    continue;
+                }
 
                 // 执行爬取
-                boolean success = scrapeCollege(context, schoolName);
+                boolean success = scrapeCollege(context, collegeName);
 
                 if (success) {
                     // 获取文件大小
-                    long fileSizeKB = getFileSizeKB(schoolName);
+                    long fileSizeKB = getFileSizeKB(collegeName);
 
                     // 更新数据库
-                    updateDatabase(schoolName, fileSizeKB);
+                    updateDatabase(url, fileSizeKB);
                     System.out.println("数据库更新成功: is_index=1, index_size=" + fileSizeKB + "KB");
                 } else {
                     System.err.println("爬取失败，跳过当前院校");
@@ -82,29 +89,29 @@ public class CollegeScraperPlaywright {
     }
 
     /**
-     * 从数据库获取院校名称列表
+     * 从数据库获取院校URL列表
      */
-    private static List<String> fetchSchoolNamesFromDatabase() throws SQLException {
-        List<String> schoolNames = new ArrayList<>();
-        String sql = "SELECT school_name FROM school_uni WHERE is_index IS NULL"; // 修改表名和字段名
+    private static List<String> fetchCollegeUrlsFromDatabase() throws SQLException {
+        List<String> urls = new ArrayList<>();
+        String sql = "SELECT url FROM school_foreign_college WHERE is_index IS NULL"; // 恢复原表名和字段名
 
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
-                schoolNames.add(rs.getString("school_name"));
+                urls.add(rs.getString("url"));
             }
         }
 
-        return schoolNames;
+        return urls;
     }
 
     /**
      * 使用Playwright执行爬取并返回是否成功
      */
-    private static boolean scrapeCollege(BrowserContext context, String schoolName) throws IOException {
-        String url = String.format(BASE_URL_TEMPLATE, schoolName);
+    private static boolean scrapeCollege(BrowserContext context, String collegeName) throws IOException {
+        String url = String.format(BASE_URL_TEMPLATE, collegeName);
         System.out.println("=== 开始抓取: " + url + " ===");
         System.out.println("时间: " + getCurrentTime());
 
@@ -112,7 +119,7 @@ public class CollegeScraperPlaywright {
         try (Page page = context.newPage()) {
             // 设置请求拦截器
             page.route("**/*", route -> {
-                if (route.request().resourceType().equals("image")  ) {
+                if (route.request().resourceType().equals("image") ) {
                     route.abort(); // 拦截非必要资源
                 } else {
                     route.resume();
@@ -125,8 +132,8 @@ public class CollegeScraperPlaywright {
                         .setTimeout(60000)
                         .setWaitUntil(WaitUntilState.NETWORKIDLE));
 
-                // 等待页面关键元素加载完成（根据实际页面结构调整）
-                page.waitForSelector("body", new Page.WaitForSelectorOptions()
+                // 等待页面关键元素加载完成（根据Niche网站调整选择器）
+                page.waitForSelector(".profile-header", new Page.WaitForSelectorOptions()
                         .setTimeout(30000));
 
                 // 等待页面稳定
@@ -136,7 +143,7 @@ public class CollegeScraperPlaywright {
                 String htmlContent = page.content();
 
                 // 保存到文件
-                saveHtmlToFile(htmlContent, schoolName);
+                saveHtmlToFile(htmlContent, collegeName);
 
                 System.out.println("页面抓取成功");
                 return true;
@@ -155,8 +162,8 @@ public class CollegeScraperPlaywright {
     /**
      * 保存HTML内容到文件
      */
-    private static void saveHtmlToFile(String htmlContent, String schoolName) throws IOException {
-        String outputDir = String.format(OUTPUT_DIR_TEMPLATE, schoolName);
+    private static void saveHtmlToFile(String htmlContent, String collegeName) throws IOException {
+        String outputDir = String.format(OUTPUT_DIR_TEMPLATE, collegeName);
         Path dirPath = Paths.get(outputDir);
 
         // 创建输出目录
@@ -177,10 +184,25 @@ public class CollegeScraperPlaywright {
     }
 
     /**
+     * 从URL中提取院校名称
+     */
+    private static String extractCollegeNameFromUrl(String url) {
+        try {
+            if (url == null || url.isEmpty()) return null;
+
+            // 如果URL格式不符合预期，直接返回原始URL
+            return url;
+        } catch (Exception e) {
+            System.err.println("提取院校名称失败: " + url);
+            return null;
+        }
+    }
+
+    /**
      * 获取文件大小(KB)
      */
-    private static long getFileSizeKB(String schoolName) throws IOException {
-        String outputDir = String.format(OUTPUT_DIR_TEMPLATE, schoolName);
+    private static long getFileSizeKB(String collegeName) throws IOException {
+        String outputDir = String.format(OUTPUT_DIR_TEMPLATE, collegeName);
         Path filePath = Paths.get(outputDir, "index.html");
 
         if (Files.exists(filePath)) {
@@ -194,21 +216,21 @@ public class CollegeScraperPlaywright {
     /**
      * 更新数据库记录
      */
-    private static void updateDatabase(String schoolName, long fileSizeKB) throws SQLException {
-        String sql = "UPDATE school_uni SET " +
+    private static void updateDatabase(String url, long fileSizeKB) throws SQLException {
+        String sql = "UPDATE school_foreign_college SET " +
                 "is_index = 1, " +
                 "index_size = ? " +
-                "WHERE school_name = ?"; // 修改表名和字段名
+                "WHERE url = ?"; // 恢复原表名和字段名
 
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setLong(1, fileSizeKB);
-            pstmt.setString(2, schoolName);
+            pstmt.setString(2, url);
 
             int rowsAffected = pstmt.executeUpdate();
             if (rowsAffected == 0) {
-                throw new SQLException("未找到匹配的记录: " + schoolName);
+                throw new SQLException("未找到匹配的记录: " + url);
             }
         }
     }
