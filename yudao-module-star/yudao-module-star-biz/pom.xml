@@ -81,6 +81,7 @@
                 <artifactId>selenium-chrome-driver</artifactId>
                 <version>4.13.0</version> <!-- 同样，版本号按需调整 -->
             </dependency>
+
     </dependencies>
 
 </project>
