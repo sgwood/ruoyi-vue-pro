@@ -81,7 +81,11 @@
                 <artifactId>selenium-chrome-driver</artifactId>
                 <version>4.13.0</version> <!-- 同样，版本号按需调整 -->
             </dependency>
-
+        <dependency>
+            <groupId>com.microsoft.playwright</groupId>
+            <artifactId>playwright</artifactId>
+            <version>1.38.0</version>
+        </dependency>
     </dependencies>
 
 </project>
