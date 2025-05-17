@@ -15,18 +15,21 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class MajorPlaywright {
+public class SubPlaywright {
     // 数据库连接参数
     private static final String DB_URL = "jdbc:mysql://sgwood.cn:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true";
     private static final String DB_USER = "sgwood";
     private static final String DB_PASSWORD = "stargold";
-
+    //major(专业设置） scoreLine（分数线） admission（招生计划） alumniSaid（师哥师姐说） employment（本科就业去向）  schoolLife（校园生活） scholarship（奖学金）
+    private static final  String WORD="admission";
     // 爬虫配置
-    private static final String BASE_URL_TEMPLATE = "https://m.sogou.com/openapi/h5/university/major?school=%s";
+    private static final String BASE_URL_TEMPLATE = "https://m.sogou.com/openapi/h5/university/"+WORD+"?school=%s";
     private static final String OUTPUT_DIR_TEMPLATE = System.getProperty("user.home") + "/Downloads/uni/%s/";
     private static final int DELAY_SECONDS = 5;
     private static final int MAX_RETRIES = 3;
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+
 
     public static void main(String[] args) {
         // 初始化 Playwright
@@ -59,7 +62,7 @@ public class MajorPlaywright {
 
                     // 更新数据库
                     updateDatabase(schoolName, fileSizeKB);
-                    System.out.println("数据库更新成功: is_index=1, index_size=" + fileSizeKB + "KB");
+                    System.out.println("数据库更新成功: size=" + fileSizeKB + "KB");
                 } else {
                     System.err.println("爬取失败，跳过当前院校");
                 }
@@ -86,7 +89,7 @@ public class MajorPlaywright {
      */
     private static List<String> fetchSchoolNamesFromDatabase() throws SQLException {
         List<String> schoolNames = new ArrayList<>();
-        String sql = "SELECT school_name FROM school_uni WHERE is_major IS NULL"; // 修改表名和字段名
+        String sql = "SELECT school_name FROM school_uni WHERE is_"+WORD+" IS NULL"; // 修改表名和字段名
 
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              Statement stmt = conn.createStatement();
@@ -165,7 +168,7 @@ public class MajorPlaywright {
         }
 
         // 写入文件
-        Path filePath = Paths.get(outputDir, "major.html");
+        Path filePath = Paths.get(outputDir, WORD+".html");
         try (BufferedWriter writer = Files.newBufferedWriter(filePath,
                 java.nio.charset.StandardCharsets.UTF_8,
                 StandardOpenOption.CREATE,
@@ -181,7 +184,7 @@ public class MajorPlaywright {
      */
     private static long getFileSizeKB(String schoolName) throws IOException {
         String outputDir = String.format(OUTPUT_DIR_TEMPLATE, schoolName);
-        Path filePath = Paths.get(outputDir, "index.html");
+        Path filePath = Paths.get(outputDir, WORD+".html");
 
         if (Files.exists(filePath)) {
             long sizeBytes = Files.size(filePath);
@@ -196,8 +199,8 @@ public class MajorPlaywright {
      */
     private static void updateDatabase(String schoolName, long fileSizeKB) throws SQLException {
         String sql = "UPDATE school_uni SET " +
-                "is_major = 1, " +
-                "major_size = ? " +
+                "is_"+WORD+" = 1, " +WORD+
+                "_size = ? " +
                 "WHERE school_name = ?"; // 修改表名和字段名
 
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
