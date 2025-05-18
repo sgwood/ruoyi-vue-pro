@@ -283,8 +283,9 @@ public class NichePlaywright {
                     Files.createDirectories(errorDir);
                 }
                 // 出错时保存截图
+                Path screenshotPath = errorDir.resolve("error_" + System.currentTimeMillis() + ".png");
                 page.screenshot(new Page.ScreenshotOptions()
-                        .setPath(errorDir)
+                        .setPath(screenshotPath)
                         .setFullPage(true));
                 return false;
             }
