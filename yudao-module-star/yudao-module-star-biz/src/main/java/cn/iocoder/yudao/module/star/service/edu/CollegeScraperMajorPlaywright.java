@@ -15,14 +15,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class CollegeScraperPlaywright {
+public class CollegeScraperMajorPlaywright {
     // 数据库连接参数
     private static final String DB_URL = "jdbc:mysql://sgwood.cn:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true";
     private static final String DB_USER = "sgwood";
     private static final String DB_PASSWORD = "stargold";
 
     // 爬虫配置
-    private static final String BASE_URL_TEMPLATE = "https://m.sogou.com/openapi/h5/university/home?school=%s";
+    private static final String BASE_URL_TEMPLATE = "https://m.sogou.com/openapi/h5/university/major?school=%s";
     private static final String OUTPUT_DIR_TEMPLATE = System.getProperty("user.home") + "/Downloads/uni/%s/";
     private static final int DELAY_SECONDS = 10;
     private static final int MAX_RETRIES = 3;
@@ -86,7 +86,7 @@ public class CollegeScraperPlaywright {
      */
     private static List<String> fetchSchoolNamesFromDatabase() throws SQLException {
         List<String> schoolNames = new ArrayList<>();
-        String sql = "SELECT school_name FROM school_uni WHERE is_index IS NULL"; // 修改表名和字段名
+        String sql = "SELECT school_name FROM school_uni WHERE is_major IS NULL"; // 修改表名和字段名
 
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              Statement stmt = conn.createStatement();
@@ -165,7 +165,7 @@ public class CollegeScraperPlaywright {
         }
 
         // 写入文件
-        Path filePath = Paths.get(outputDir, "index.html");
+        Path filePath = Paths.get(outputDir, "major.html");
         try (BufferedWriter writer = Files.newBufferedWriter(filePath,
                 java.nio.charset.StandardCharsets.UTF_8,
                 StandardOpenOption.CREATE,
@@ -181,7 +181,7 @@ public class CollegeScraperPlaywright {
      */
     private static long getFileSizeKB(String schoolName) throws IOException {
         String outputDir = String.format(OUTPUT_DIR_TEMPLATE, schoolName);
-        Path filePath = Paths.get(outputDir, "index.html");
+        Path filePath = Paths.get(outputDir, "major.html");
 
         if (Files.exists(filePath)) {
             long sizeBytes = Files.size(filePath);
@@ -196,8 +196,8 @@ public class CollegeScraperPlaywright {
      */
     private static void updateDatabase(String schoolName, long fileSizeKB) throws SQLException {
         String sql = "UPDATE school_uni SET " +
-                "is_index = 1, " +
-                "index_size = ? " +
+                "is_major = 1, " +
+                "major_size = ? " +
                 "WHERE school_name = ?"; // 修改表名和字段名
 
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
