@@ -11,5 +11,6 @@
         <property name="hibernate.show_sql">true</property>
         <property name="hibernate.hbm2ddl.auto">update</property>
         <mapping class="cn.iocoder.yudao.module.star.dal.mysql.intl.SchoolIntlEntity"/>
+        <mapping class="cn.iocoder.yudao.module.star.dal.mysql.intl.SchoolInstEntity"/>
     </session-factory>
 </hibernate-configuration>
