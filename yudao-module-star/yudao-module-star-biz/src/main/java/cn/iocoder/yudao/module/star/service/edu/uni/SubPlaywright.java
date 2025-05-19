@@ -25,7 +25,7 @@ public class SubPlaywright {
     // 爬虫配置
     private static final String BASE_URL_TEMPLATE = "https://m.sogou.com/openapi/h5/university/"+WORD+"?school=%s";
     private static final String OUTPUT_DIR_TEMPLATE = System.getProperty("user.home") + "/Downloads/uni/%s/";
-    private static final int DELAY_SECONDS = 5;
+    private static final int DELAY_SECONDS = 0;
     private static final int MAX_RETRIES = 3;
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 

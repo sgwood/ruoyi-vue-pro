@@ -43,6 +43,7 @@ public class NicheToDB {
         StringBuilder descnContent = new StringBuilder();
         String website_url = "";
         String website_name = "";
+        String grade="";
 
         try {
             // 使用 JSoup 解析 HTML 文件
