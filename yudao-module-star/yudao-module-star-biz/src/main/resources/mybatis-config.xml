@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <typeAliases>
+        <package name="cn.iocoder.yudao.module.star.dal.mysql.intl"/>
+    </typeAliases>
+    <environments default="development">
+        <environment id="development">
+            <transactionManager type="JDBC"/>
+            <dataSource type="POOLED">
+                <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
+                <property name="url" value="jdbc:mysql://sgwood.cn:3306/ruoyi-vue-pro?useSSL=false&amp;serverTimezone=Asia/Shanghai&amp;allowPublicKeyRetrieval=true&amp;nullCatalogMeansCurrent=true&amp;rewriteBatchedStatements=true"/>
+                <property name="username" value="sgwood"/>
+                <property name="password" value="stargold"/>
+            </dataSource>
+        </environment>
+    </environments>
+
+    <mappers>
+        <package name="cn.iocoder.yudao.module.star.dal.mysql.intl"/>
+    </mappers>
+</configuration>
