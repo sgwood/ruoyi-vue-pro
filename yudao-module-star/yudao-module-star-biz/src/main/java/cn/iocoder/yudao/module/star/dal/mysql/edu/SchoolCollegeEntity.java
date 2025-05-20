@@ -130,4 +130,13 @@ public class SchoolCollegeEntity {
 
     @Column(name = "img3", length = 255)
     private String img3;
+
+    @Column(name = "tags", length = 255)
+    private String tags;
+    @Column(name = "parent_entity", length = 255)
+    private String parentEntity;
+    @Column(name = "athletics_division", length = 255)
+    private String athleticsDivision;
+
+
 }

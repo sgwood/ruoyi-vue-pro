@@ -37,29 +37,82 @@ public class NicheToDB {
         Path filePath = Paths.get(baseDir, collegeDir, htmlFileName);
         File htmlFile = filePath.toFile();
 
-        StringBuilder descnContent = new StringBuilder();
+        // 在分析 index.html 前先获取 entity
+        SchoolCollegeEntity entity = getSchoolCollegeEntity(collegeDir);
+
+        if (entity == null) {
+            System.out.println("未找到匹配的记录，更新失败");
+            return;
+        }
 
         try {
             // 使用 JSoup 解析 HTML 文件
             Document doc = Jsoup.parse(htmlFile, "UTF-8");
-            // 提取 h1 标签内容
-            Element h1Element = doc.selectFirst("h1");
-            if (h1Element != null) {
-                String h1Text = h1Element.text();
-                // descnContent.append(h1Text).append("\n");
-            }
 
             // 提取 id=from-the-school 的元素的子孙元素 p
             Element fromTheSchoolElement = doc.getElementById("from-the-school");
             if (fromTheSchoolElement != null) {
                 Elements pElements = fromTheSchoolElement.select("p");
-                for (Element pElement : pElements) {
-                    descnContent.append(pElement.text()).append("\n");
+                if (!pElements.isEmpty()) {
+                    // 当得到 from-the-school 的第一个 p 时，将其内容写到 entity
+                    Element firstPElement = pElements.first();
+                    if (firstPElement != null) {
+                        entity.setDescn(firstPElement.text());
+                    }
                 }
             }
 
-            // 根据 collegeDir 从数据库读取 SchoolCollegeEntity 并更新 descn 字段
-            updateSchoolCollegeEntity(collegeDir, descnContent.toString());
+            // 获取 class="profile__website__link" 的 a 链接内容
+            Element websiteLink = doc.selectFirst("a.profile__website__link");
+            if (websiteLink != null) {
+                String websiteUrl = websiteLink.attr("href");
+                entity.setWebsite(websiteUrl);
+            }
+
+            // 获取 class=profile__address--compact 的元素内容
+            Element addressElement = doc.selectFirst(".profile__address--compact");
+            if (addressElement != null) {
+                String address = addressElement.text().trim();
+                entity.setAddress(address);
+            }
+
+            // 抓取 class=search-tags__wrap__list__tag 的 li 元素
+            Elements tagElements = doc.select("li.search-tags__wrap__list__tag");
+            StringBuilder tagsBuilder = new StringBuilder();
+            for (int i = 0; i < tagElements.size(); i++) {
+                Element tagElement = tagElements.get(i);
+                if (i > 0) {
+                    tagsBuilder.append(",");
+                }
+                tagsBuilder.append(tagElement.text().trim());
+            }
+            entity.setTags(tagsBuilder.toString());
+
+            // 获取 class="parent__entity__link" 的 a 链接内容
+            Element parentEntityLink = doc.selectFirst("a.parent__entity__link");
+            if (parentEntityLink != null) {
+                String parentEntityUrl = parentEntityLink.attr("href");
+                entity.setParentEntity(parentEntityUrl);
+            }
+
+            // 找到包含 Athletics Division 的 span 元素
+            Elements spanElements = doc.select("span:contains(Athletics Division)");
+            if (!spanElements.isEmpty()) {
+                Element targetSpan = spanElements.first();
+                // 获取其祖先中 class 为 MuiBox-root 的 div 元素
+                Element ancestorDiv = targetSpan.closest("div.MuiBox-root");
+                if (ancestorDiv != null) {
+                    // 找到该 div 元素的后一个兄弟 div 节点
+                    Element siblingDiv = ancestorDiv.nextElementSibling();
+                    if (siblingDiv != null && siblingDiv.tagName().equals("div")) {
+                        String athleticsDivision = siblingDiv.text().trim();
+                        entity.setAthleticsDivision(athleticsDivision);
+                    }
+                }
+            }
+
+            // 更新数据库
+            updateSchoolCollegeEntity(entity);
         } catch (IOException e) {
             System.err.println("读取文件时出错: " + e.getMessage());
             e.printStackTrace();
@@ -67,30 +120,36 @@ public class NicheToDB {
     }
 
     /**
-     * 根据 url 从数据库读取 SchoolCollegeEntity 并更新 descn 字段
+     * 根据 url 从数据库读取 SchoolCollegeEntity
      * @param url 学校的 url
-     * @param descn 提取的描述内容
+     * @return SchoolCollegeEntity 实体，如果未找到则返回 null
      */
-    private static void updateSchoolCollegeEntity(String url, String descn) {
+    private static SchoolCollegeEntity getSchoolCollegeEntity(String url) {
+        Session session = sessionFactory.openSession();
+        try {
+            // 根据 url 查询 SchoolCollegeEntity
+            return session.createQuery(
+                    "FROM SchoolCollegeEntity WHERE url = :url", SchoolCollegeEntity.class)
+                    .setParameter("url", url)
+                    .uniqueResult();
+        } finally {
+            session.close();
+        }
+    }
+
+    /**
+     * 更新 SchoolCollegeEntity 实体到数据库
+     * @param entity 要更新的 SchoolCollegeEntity 实体
+     */
+    private static void updateSchoolCollegeEntity(SchoolCollegeEntity entity) {
         Session session = sessionFactory.openSession();
         Transaction transaction = null;
         try {
             transaction = session.beginTransaction();
-            // 根据 url 查询 SchoolCollegeEntity
-            SchoolCollegeEntity entity = session.createQuery(
-                    "FROM SchoolCollegeEntity WHERE url = :url", SchoolCollegeEntity.class)
-                    .setParameter("url", url)
-                    .uniqueResult();
-
-            if (entity != null) {
-                // 更新 descn 字段
-                entity.setDescn(descn);
-                session.update(entity);
-                System.out.println("数据库更新成功");
-            } else {
-                System.out.println("未找到匹配的记录，更新失败");
-            }
+            // 更新实体
+            session.update(entity);
             transaction.commit();
+            System.out.println("数据库更新成功");
         } catch (Exception e) {
             if (transaction != null) {
                 transaction.rollback();
