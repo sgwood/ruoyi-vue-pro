@@ -14,23 +14,31 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class HTMLToDB {
     public static void main(String[] args) {
         // 定义目录和文件名变量
         String baseDir = System.getProperty("user.home") + "/Downloads/uni";
-        String collegeDir = "清华大学";
+        String collegeDir = "安徽体育运动职业技术学院";
         String htmlFileName = "index.html";
         String schoolLifeHtmlFileName = "schoolLife.html";
-        String scholarshipHtmlFileName = "scholarship.html"; // 新增奖学金文件变量
+        String scholarshipHtmlFileName = "scholarship.html";
+        String majorHtmlFileName = "major.html"; // 新增 major.html 文件名
+        String employmentHtmlFileName = "employment.html"; // 新增 employment.html 文件名
 
         // 构建文件路径
         Path filePath = Paths.get(baseDir, collegeDir, htmlFileName);
         File htmlFile = filePath.toFile();
         Path schoolLifeFilePath = Paths.get(baseDir, collegeDir, schoolLifeHtmlFileName);
         File schoolLifeHtmlFile = schoolLifeFilePath.toFile();
-        Path scholarshipFilePath = Paths.get(baseDir, collegeDir, scholarshipHtmlFileName); // 构建奖学金文件路径
+        Path scholarshipFilePath = Paths.get(baseDir, collegeDir, scholarshipHtmlFileName);
         File scholarshipHtmlFile = scholarshipFilePath.toFile();
+        Path majorFilePath = Paths.get(baseDir, collegeDir, majorHtmlFileName); // 构建 major.html 文件路径
+        File majorHtmlFile = majorFilePath.toFile();
+        Path employmentFilePath = Paths.get(baseDir, collegeDir, employmentHtmlFileName); // 构建 employment.html 文件路径
+        File employmentHtmlFile = employmentFilePath.toFile();
 
         // 创建 Hibernate 会话工厂
         SessionFactory sessionFactory = new Configuration().configure().buildSessionFactory();
@@ -152,7 +160,7 @@ public class HTMLToDB {
                 // 解析 schoolLife.html 文件
                 if (schoolLifeHtmlFile.exists()) {
                     Document schoolLifeDoc = Jsoup.parse(schoolLifeHtmlFile, "UTF-8");
-                    Element collegeScoreDiv = schoolLifeDoc.selectFirst("div.college-score");
+                    Element collegeScoreDiv = schoolLifeDoc.selectFirst("div.school-life div.college-score");
                     if (collegeScoreDiv != null) {
                         Elements fzTitleSpans = collegeScoreDiv.select("span.fz-title");
                         if (fzTitleSpans.size() > 0) {
@@ -204,6 +212,101 @@ public class HTMLToDB {
                                     schoolUniEntity.setScholarshipSetting(spanText);
                                 } else if ("困难生资助".equals(h4Text)) {
                                     schoolUniEntity.setAidInfo(spanText);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 解析 major.html 文件
+                if (majorHtmlFile.exists()) {
+                    Document majorDoc = Jsoup.parse(majorHtmlFile, "UTF-8");
+                    Elements h4Elements = majorDoc.select("h4");
+                    for (Element h4 : h4Elements) {
+                        String h4Text = h4.text().trim();
+                        if ("科研成果".equals(h4Text)) {
+                            Element nextDiv = h4.nextElementSibling();
+                            if (nextDiv != null && nextDiv.tagName().equals("div")) {
+                                Elements childDivs = nextDiv.select("div");
+                                for (Element childDiv : childDivs) {
+                                    Element pElement = childDiv.selectFirst("p");
+                                    if (pElement != null) {
+                                        String pTextMajor = pElement.text().trim();
+                                        Element prevSpan = pElement.previousElementSibling();
+                                        if (prevSpan != null && prevSpan.tagName().equals("span")) {
+                                            String spanText = prevSpan.text().trim();
+                                            try {
+                                                int value = Integer.parseInt(spanText);
+                                                if ("双一流".equals(pTextMajor)) {
+                                                    schoolUniEntity.setDoubleFirstNum(value);
+                                                } else if ("开设专业".equals(pTextMajor)) {
+                                                    schoolUniEntity.setMajorNum(value);
+                                                } else if ("学科评估".equals(pTextMajor)) {
+                                                    schoolUniEntity.setSubjectReviewNum(value);
+                                                } else if ("特色专业".equals(pTextMajor)) {
+                                                    schoolUniEntity.setMajorSpecialtyNum(value);
+                                                }
+                                            } catch (NumberFormatException e) {
+                                                System.err.println("无法将文本转换为整数: " + spanText);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 解析 employment.html 文件
+                    if (employmentHtmlFile.exists()) {
+                        Document employmentDoc = Jsoup.parse(employmentHtmlFile, "UTF-8");
+                        // 找到内容为本科就业前景的 h4
+                        Elements h4Elements2 = employmentDoc.select("h4");
+                        for (Element h4Element : h4Elements2) {
+                            String h4Text = h4Element.text().trim();
+                            if ("本科就业前景".equals(h4Text)) {
+
+                                Element nextDiv = h4Element.nextElementSibling();
+                                if (nextDiv != null && nextDiv.tagName().equals("div")) {
+                                    Elements childDivs = nextDiv.select("div");
+                                    for (Element childDiv : childDivs) {
+                                        Element svgTextDiv = childDiv.selectFirst("div.svg-text");
+                                        if (svgTextDiv != null) {
+                                            Element pElement = svgTextDiv.selectFirst("p.text-title");
+                                            if (pElement != null) {
+                                                String pText2 = pElement.text().trim();
+                                                Element prevSpan = pElement.previousElementSibling();
+                                                if (prevSpan != null && prevSpan.tagName().equals("p")) {
+                                                    String spanText = prevSpan.text().trim();
+                                                    if ("就业率".equals(pText2)) {
+                                                        schoolUniEntity.setEmploymentRate(spanText);
+                                                    } else if ("出国率".equals(pText2)) {
+                                                        schoolUniEntity.setOverseasRate(spanText);
+                                                    } else if ("读研率".equals(pText2)) {
+                                                        schoolUniEntity.setGraduateRate(spanText);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // 找到 id=salaryCharts 的 div
+                        Element salaryChartsDiv = employmentDoc.getElementById("salaryCharts");
+                        if (salaryChartsDiv != null) {
+                            Element nextDiv = salaryChartsDiv.nextElementSibling();
+                            if (nextDiv != null && nextDiv.tagName().equals("div")) {
+                                Element spanElement = nextDiv.selectFirst("span");
+                                if (spanElement != null) {
+                                    String spanText = spanElement.text().trim();
+                                    // 使用正则表达式提取数字
+                                    Pattern pattern = Pattern.compile("\\d+");
+                                    Matcher matcher = pattern.matcher(spanText);
+                                    if (matcher.find()) {
+                                        String number = matcher.group();
+                                        schoolUniEntity.setIncomeFresh(number);
+                                    }
                                 }
                             }
                         }

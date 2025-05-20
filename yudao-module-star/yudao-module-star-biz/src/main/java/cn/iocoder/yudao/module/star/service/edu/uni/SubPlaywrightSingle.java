@@ -22,7 +22,7 @@ public class SubPlaywrightSingle {
     private static final String DB_PASSWORD = "stargold";
     //home主页 major(专业设置） scoreLine（分数线） admission（招生计划） alumniSaid（师哥师姐说） employment（本科就业去向）  schoolLife（校园生活） scholarship（奖学金）
     private static final  String[] WORDS={"home","scoreLine","major","admission","alumniSaid","employment","schoolLife","scholarship"};
-    private static final String SCHOOL_NAME="清华大学";
+    private static final String SCHOOL_NAME="安徽体育运动职业技术学院";
 
     private static final String OUTPUT_DIR_TEMPLATE = System.getProperty("user.home") + "/Downloads/uni/%s/";
     private static final int DELAY_SECONDS = 0;
