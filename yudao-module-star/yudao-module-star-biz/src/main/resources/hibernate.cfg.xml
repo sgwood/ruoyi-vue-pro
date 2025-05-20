@@ -12,5 +12,7 @@
         <property name="hibernate.hbm2ddl.auto">update</property>
         <mapping class="cn.iocoder.yudao.module.star.dal.mysql.intl.SchoolIntlEntity"/>
         <mapping class="cn.iocoder.yudao.module.star.dal.mysql.intl.SchoolInstEntity"/>
+        <mapping class="cn.iocoder.yudao.module.star.entity.SchoolUniComment"/>
+        <mapping class="cn.iocoder.yudao.module.star.dal.mysql.edu.SchoolUniEntity"/>
     </session-factory>
 </hibernate-configuration>
