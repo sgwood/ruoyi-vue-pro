@@ -1,7 +1,10 @@
 package cn.iocoder.yudao.module.star.service.edu.niche;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
+import cn.iocoder.yudao.module.star.dal.mysql.edu.SchoolCollegeEntity;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.cfg.Configuration;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -11,29 +14,23 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 
 public class NicheToDB {
-    private static final String DB_URL = "jdbc:mysql://sgwood.cn:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true";
-    private static final String DB_USER = "sgwood";
-    private static final String DB_PASSWORD = "stargold";
-    private static HikariDataSource dataSource;
+    private static final SessionFactory sessionFactory;
 
     static {
-        HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(DB_URL);
-        config.setUsername(DB_USER);
-        config.setPassword(DB_PASSWORD);
-        config.setMaximumPoolSize(10);
-        dataSource = new HikariDataSource(config);
+        try {
+            // 创建 SessionFactory
+            sessionFactory = new Configuration().configure().buildSessionFactory();
+        } catch (Throwable ex) {
+            throw new ExceptionInInitializerError(ex);
+        }
     }
 
     public static void main(String[] args) {
         // 定义目录和文件名变量
         String baseDir = System.getProperty("user.home") + "/Downloads/test";
-        String collegeDir = "danville-area-community-college";
+        String collegeDir = "mesa-community-college";
         String htmlFileName = "index.html";
 
         // 构建文件路径
@@ -49,7 +46,7 @@ public class NicheToDB {
             Element h1Element = doc.selectFirst("h1");
             if (h1Element != null) {
                 String h1Text = h1Element.text();
-               // descnContent.append(h1Text).append("\n");
+                // descnContent.append(h1Text).append("\n");
             }
 
             // 提取 id=from-the-school 的元素的子孙元素 p
@@ -61,35 +58,47 @@ public class NicheToDB {
                 }
             }
 
-            // 更新数据库
-            updateDatabase(collegeDir, descnContent.toString());
+            // 根据 collegeDir 从数据库读取 SchoolCollegeEntity 并更新 descn 字段
+            updateSchoolCollegeEntity(collegeDir, descnContent.toString());
         } catch (IOException e) {
             System.err.println("读取文件时出错: " + e.getMessage());
-            e.printStackTrace();
-        } catch (SQLException e) {
-            System.err.println("更新数据库时出错: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     /**
-     * 更新 school_foreign_college 表中的 descn 字段
+     * 根据 url 从数据库读取 SchoolCollegeEntity 并更新 descn 字段
      * @param url 学校的 url
      * @param descn 提取的描述内容
-     * @throws SQLException 数据库操作异常
      */
-    private static void updateDatabase(String url, String descn) throws SQLException {
-        String sql = "UPDATE school_foreign_college SET descn = ? WHERE url = ?";
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, descn);
-            pstmt.setString(2, url);
-            int rowsAffected = pstmt.executeUpdate();
-            if (rowsAffected > 0) {
+    private static void updateSchoolCollegeEntity(String url, String descn) {
+        Session session = sessionFactory.openSession();
+        Transaction transaction = null;
+        try {
+            transaction = session.beginTransaction();
+            // 根据 url 查询 SchoolCollegeEntity
+            SchoolCollegeEntity entity = session.createQuery(
+                    "FROM SchoolCollegeEntity WHERE url = :url", SchoolCollegeEntity.class)
+                    .setParameter("url", url)
+                    .uniqueResult();
+
+            if (entity != null) {
+                // 更新 descn 字段
+                entity.setDescn(descn);
+                session.update(entity);
                 System.out.println("数据库更新成功");
             } else {
                 System.out.println("未找到匹配的记录，更新失败");
             }
+            transaction.commit();
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            System.err.println("更新数据库时出错: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            session.close();
         }
     }
 }
