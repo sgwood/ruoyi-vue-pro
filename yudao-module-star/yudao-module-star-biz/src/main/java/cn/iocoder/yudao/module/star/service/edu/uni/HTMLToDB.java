@@ -157,6 +157,28 @@ public class HTMLToDB {
                     }
                 }
 
+                Elements h4ElementsImg = doc.select("h4");
+                for (Element h4Element : h4ElementsImg) {
+                    String h4Text = h4Element.text().trim();
+                    if (h4Text.contains("校园图片")) {
+                        Element pictureElement = h4Element.nextElementSibling();
+                        if (pictureElement != null) {
+                            Elements imgElements = pictureElement.select("img");
+                            int imgCount = imgElements.size();
+                            if (imgCount > 0) {
+                                schoolUniEntity.setImg1(imgElements.get(0).attr("src").trim());
+                            }
+                            if (imgCount > 1) {
+                                schoolUniEntity.setImg2(imgElements.get(1).attr("src").trim());
+                            }
+                            if (imgCount > 2) {
+                                schoolUniEntity.setImg3(imgElements.get(2).attr("src").trim());
+                            }
+                        }
+                    }
+                }
+
+
                 // 解析 schoolLife.html 文件
                 if (schoolLifeHtmlFile.exists()) {
                     Document schoolLifeDoc = Jsoup.parse(schoolLifeHtmlFile, "UTF-8");

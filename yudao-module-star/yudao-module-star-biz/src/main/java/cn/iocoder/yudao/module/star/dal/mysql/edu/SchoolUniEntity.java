@@ -190,5 +190,11 @@ public class SchoolUniEntity {
 
     @Column(name = "canteen")
     private String canteen;
+    @Column(name = "img1")
+    private String img1;
+    @Column(name = "img2")
+    private String img2;
+    @Column(name = "img3")
+    private String img3;
 
 }
