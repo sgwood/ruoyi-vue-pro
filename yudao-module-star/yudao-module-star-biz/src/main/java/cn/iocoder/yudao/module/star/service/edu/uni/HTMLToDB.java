@@ -368,10 +368,11 @@ public class HTMLToDB {
 
                 // 更新实体
                 session.update(schoolUniEntity);
+                // 提交事务
+                transaction.commit();
             }
 
-            // 提交事务
-            transaction.commit();
+
         } catch (Exception e) {
             System.err.println("出错: " + e.getMessage());
             e.printStackTrace();
