@@ -15,5 +15,6 @@
         <mapping class="cn.iocoder.yudao.module.star.entity.SchoolUniComment"/>
         <mapping class="cn.iocoder.yudao.module.star.dal.mysql.edu.SchoolUniEntity"/>
         <mapping class="cn.iocoder.yudao.module.star.dal.mysql.edu.SchoolUniMajor"/>
+        <mapping class="cn.iocoder.yudao.module.star.dal.mysql.edu.SchoolCollegeEntity"/>
     </session-factory>
 </hibernate-configuration>
