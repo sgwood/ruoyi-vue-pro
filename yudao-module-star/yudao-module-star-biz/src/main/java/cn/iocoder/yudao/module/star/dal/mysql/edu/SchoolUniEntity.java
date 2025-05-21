@@ -197,4 +197,7 @@ public class SchoolUniEntity {
     @Column(name = "img3")
     private String img3;
 
+    @Column(name="is_comment")
+    private Integer isComment;
+
 }
