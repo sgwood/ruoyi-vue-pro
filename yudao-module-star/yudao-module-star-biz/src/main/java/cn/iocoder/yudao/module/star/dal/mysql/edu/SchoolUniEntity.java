@@ -199,5 +199,7 @@ public class SchoolUniEntity {
 
     @Column(name="is_comment")
     private Integer isComment;
+    @Column(name="is_major_list")
+    private Integer isMajorList;
 
 }
