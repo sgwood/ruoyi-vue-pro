@@ -171,7 +171,7 @@ public class SchoolCollegeEntity {
     private String averageHousingCost;
 
     @Column(name = "average_mealplan_cost", precision = 10, scale = 2)
-    private Double averageMealplanCost;
+    private String averageMealplanCost;
 
     @Column(name = "books_suppies")
     private String booksSuppies;
@@ -207,12 +207,10 @@ public class SchoolCollegeEntity {
     private String onlineBachelorsPrograms;
 
     @Column(name = "full_time_enrollment")
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date fullTimeEnrollment;
+    private String fullTimeEnrollment;
 
     @Column(name = "part_time_undergrads")
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date partTimeUndergrads;
+    private String partTimeUndergrads;
 
     @Column(name = "undergrads_over_25")
     private String undergradsOver25;
