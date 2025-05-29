@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
@@ -20,22 +19,9 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Iterator;
-// 自定义 LocalDateTime 反序列化器
-class LocalDateTimeDeserializer extends JsonDeserializer<LocalDateTime> {
-    @Override
-    public LocalDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-        JsonNode node = p.getCodec().readTree(p);
-        String timestampStr = node.asText();
-        if(timestampStr.equals("0")){
-            return null;
-        }
-        long timestamp = Long.parseLong(timestampStr);
-        return Instant.ofEpochSecond(timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime();
-    }
-}
-public class ParkApiClient {
-    private static final String BASE_URL = "https://wxinterface.xuanzhi.com/siteapplets/park-list?page=%d&name=&company_type=1&district_1sts=&district_2nds=&district_3rds=&industry_1sts=&industry_2nds=&sort=user_num&park_level=0";
+
+public class ParkGovApiClient {
+    private static final String BASE_URL = "https://wxinterface.xuanzhi.com/siteapplets/park-list?page=%d&name=&company_type=2&district_1sts=&district_2nds=&district_3rds=&industry_1sts=&industry_2nds=&sort=user_num&park_level=0";
     private static final String PAGE_FILE_PATH = System.getProperty("user.home") + "/Downloads/page.txt";
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final SessionFactory sessionFactory;
@@ -49,7 +35,7 @@ public class ParkApiClient {
 
     public static void main(String[] args) {
         int startPage =getLastSavedPage();
-        for (int page = startPage; page <= 408; page++) {
+        for (int page = startPage; page <= 268; page++) {
             try {
                 System.out.println("开始抓取第 " + page + " 页...");
                 String url = String.format(BASE_URL, page);
@@ -104,7 +90,7 @@ public class ParkApiClient {
         con.setRequestProperty("sec-fetch-site", "cross-site");
         con.setRequestProperty("sec-fetch-mode", "cors");
         con.setRequestProperty("sec-fetch-dest", "empty");
-        con.setRequestProperty("referer", "https://servicewechat.com/wxfef0b933258/38bd31d3/page-frame.html");
+        con.setRequestProperty("referer", "https://servicewechat.com/wxfef0b933258238bd31d3/page-frame.html");
         con.setRequestProperty("accept-language", "en-US,en;q=0.9");
 
         try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8))) {

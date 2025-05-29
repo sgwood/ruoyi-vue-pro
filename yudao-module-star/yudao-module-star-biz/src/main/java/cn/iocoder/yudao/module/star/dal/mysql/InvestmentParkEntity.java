@@ -72,7 +72,7 @@ public class InvestmentParkEntity {
     private Integer is_iron_fans;
 
     @Column(name = "work_time")
-    private String work_time;
+    private LocalDateTime work_time;
 
     @Column(name = "is_main_dock")
     private Integer is_main_dock;
@@ -195,4 +195,10 @@ public class InvestmentParkEntity {
     private JsonNode user;
     @Column(name = "selection_status")
     private Integer selection_status;
+
+
+
+    @Column(name = "detail")
+    @Type(type = "json")
+    private JsonNode detail;
 }
