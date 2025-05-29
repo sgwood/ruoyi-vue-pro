@@ -105,6 +105,13 @@
             <artifactId>hibernate-core</artifactId>
             <version>5.6.15.Final</version>
         </dependency>
+        <!-- Hibernate Types -->
+        <dependency>
+            <groupId>io.hypersistence</groupId>
+            <artifactId>hypersistence-utils-hibernate-55</artifactId>
+            <version>3.9.5</version>
+        </dependency>
+
     </dependencies>
 
 </project>
