@@ -20,6 +20,7 @@ import java.util.*;
 /**
  * 在主页里面取是否有：
  *
+ * //评论 https://www.niche.com/api/entity-reviews/?e=1d755237-c671-478d-8020-63cc46eed935&page=30&limit=100
  * rankings admissions cost `academics`  `majors` students campus-life after-college reviews（带分页） ，有的话，抓取子页面数据。
  */
 public class NichePlaywrightSingle {
@@ -171,7 +172,7 @@ public class NichePlaywrightSingle {
      */
     private static List<String> fetchCollegeUrlsFromDatabase() throws SQLException {
         List<String> urls = new ArrayList<>();
-        String sql = "SELECT url FROM school_foreign_college WHERE is_index IS NULL"; // 恢复原表名和字段名
+        String sql = "SELECT url FROM school_foreign_college WHERE url='massachusetts-institute-of-technology'"; // 恢复原表名和字段名
 
         try (Connection conn = dataSource.getConnection();
              Statement stmt = conn.createStatement();
@@ -273,6 +274,60 @@ public class NichePlaywrightSingle {
                 saveHtmlToFile(htmlContent, collegeName);
 
                 System.out.println("页面抓取成功");
+
+                // 查找 class=expansion-link 的 div 元素
+                // 修改为使用 List<ElementHandle> 类型
+                List<ElementHandle> expansionLinks = page.querySelectorAll("div.expansion-link");
+                for (ElementHandle expansionLink : expansionLinks) {
+                    String text = expansionLink.innerText().trim();
+                    ElementHandle aLink = expansionLink.querySelector("a");
+                    if (aLink != null) {
+                        String href = aLink.getAttribute("href");
+                        if (href != null && !href.isEmpty()) {
+                            String fullUrl = new java.net.URL(new java.net.URL(url), href).toString();
+                            String fileName = null;
+                            switch (text) {
+                                case "Read More About Admissions & Acceptance":
+                                    fileName = "admissions.html";
+                                    break;
+                                case "Explore Tuition & Cost Breakdown":
+                                    fileName = "cost.html";
+                                    break;
+                                case "Read More About Academics":
+                                    fileName = "academics.html";
+                                    break;
+                                case "See All Massachusetts Institute of Technology Rankings":
+                                    fileName = "rankings.html";
+                                    break;
+                                case "Read More About the Students":
+                                    fileName = "students.html";
+                                    break;
+                                case "Read More About Campus Life":
+                                    fileName = "campus-life.html";
+                                    break;
+                                case "Read More About Graduation Rate & Income":
+                                    fileName = "after-college.html";
+                                    break;
+                            }
+                            if (fileName != null) {
+                                try (Page subPage = context.newPage()) {
+                                    subPage.navigate(fullUrl, new Page.NavigateOptions()
+                                            .setTimeout(60000)
+                                            .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+                                    subPage.waitForSelector("#app", new Page.WaitForSelectorOptions()
+                                            .setTimeout(30000));
+                                    Thread.sleep(5000);
+                                    String subHtmlContent = subPage.content();
+                                    saveSubHtmlToFile(subHtmlContent, collegeName, fileName);
+                                    System.out.println("子页面 " + fullUrl + " 抓取成功，保存为 " + fileName);
+                                } catch (Exception e) {
+                                    System.err.println("子页面 " + fullUrl + " 抓取失败: " + e.getMessage());
+                                }
+                            }
+                        }
+                    }
+                }
+
                 return true;
 
             } catch (Exception e) {
@@ -295,6 +350,30 @@ public class NichePlaywrightSingle {
                 return false;
             }
         }
+    }
+
+    /**
+     * 保存子页面HTML内容到文件
+     */
+    private static void saveSubHtmlToFile(String htmlContent, String collegeName, String fileName) throws IOException {
+        String outputDir = String.format(OUTPUT_DIR_TEMPLATE, collegeName);
+        Path dirPath = Paths.get(outputDir);
+
+        // 创建输出目录
+        if (!Files.exists(dirPath)) {
+            Files.createDirectories(dirPath);
+        }
+
+        // 写入文件
+        Path filePath = Paths.get(outputDir, fileName);
+        try (BufferedWriter writer = Files.newBufferedWriter(filePath,
+                java.nio.charset.StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.TRUNCATE_EXISTING)) {
+            writer.write(htmlContent);
+        }
+
+        System.out.println("子页面内容已保存到: " + filePath);
     }
 
     /**
