@@ -10,7 +10,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/map")
+@RequestMapping("/demo/api/map")
 public class BaiduMapProxyController {
 
     @Value("${baidu.map.api.key}")
@@ -23,7 +23,7 @@ public class BaiduMapProxyController {
      * 代理百度地图API请求，将前端请求转发到百度地图API
      * 并在后端添加API密钥，避免前端暴露
      */
-    @RequestMapping(value = "/{service}/{version}/{action}", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/get/{service}/{version}/{action}", method = {RequestMethod.GET, RequestMethod.POST})
     public ResponseEntity<String> proxyBaiduMapApi(
             @PathVariable String service,
             @PathVariable String version,
