@@ -39,7 +39,7 @@ public class IntlDetailToDBService {
                 entity.setId(schoolId);
 
                 // 更新数据
-                schoolIntlRepository.save(entity);
+           //     schoolIntlRepository.save(entity);
                 System.out.println("数据库更新成功");
             } else {
                 System.out.println("接口返回 code 不为 0 或缺少 data 字段");

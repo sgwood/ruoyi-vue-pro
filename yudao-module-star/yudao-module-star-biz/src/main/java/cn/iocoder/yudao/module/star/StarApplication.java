@@ -26,8 +26,8 @@ public class StarApplication implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         // 获取第一个学校 id
-        Optional<SchoolIntlEntity> firstSchool = schoolIntlRepository.findById(100001L);
-        if (firstSchool.isPresent()) {
+        Optional<SchoolIntlEntity> firstSchool = null;//schoolIntlRepository.findById(100001L);
+        if (firstSchool!=null && firstSchool.isPresent()) {
             Long schoolId = firstSchool.get().getId();
             intlDetailToDBService.updateSchoolIntlFromApi(schoolId);
         } else {

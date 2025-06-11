@@ -1,11 +1,7 @@
 package cn.iocoder.yudao.module.star.service.edu;
 
-import cn.iocoder.yudao.module.star.dal.dataobject.edu.Institution;
-import cn.iocoder.yudao.module.star.dal.dataobject.edu.InstitutionListResponse;
 import cn.iocoder.yudao.module.star.dal.dataobject.edu.SchoolIntl;
 import cn.iocoder.yudao.module.star.dal.dataobject.edu.SchoolListResponse;
-import cn.iocoder.yudao.module.star.dal.mysql.edu.InstitutionEntity;
-import cn.iocoder.yudao.module.star.dal.mysql.edu.InstitutionMapper;
 import cn.iocoder.yudao.module.star.dal.mysql.edu.SchoolIntlEntity;
 import cn.iocoder.yudao.module.star.dal.mysql.edu.SchoolIntlMapper;
 import org.springframework.beans.factory.annotation.Autowired;
