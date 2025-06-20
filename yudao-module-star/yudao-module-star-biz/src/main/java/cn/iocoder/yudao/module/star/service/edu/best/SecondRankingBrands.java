@@ -9,8 +9,8 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "best_second_ranking_brands_qs")
-public class SecondRankingBrandsQs {
+@Table(name = "best_second_ranking_brands")
+public class SecondRankingBrands {
 
     @Id
     @Column(name = "id", nullable = false)

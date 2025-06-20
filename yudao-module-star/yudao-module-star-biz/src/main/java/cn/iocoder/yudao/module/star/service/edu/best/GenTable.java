@@ -1,39 +1,44 @@
 package cn.iocoder.yudao.module.star.service.edu.best;
 
+import java.io.*;
+import java.util.*;
+import java.util.regex.Pattern;
+import java.net.*;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.hibernate.cfg.Configuration;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.annotations.GenericGenerator;
-
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import java.lang.reflect.Field;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.regex.Matcher;
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
-import java.io.*;
-import java.lang.reflect.Field;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import lombok.Data;
 
 public class GenTable {
 
     private static SessionFactory sessionFactory;
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    static {
+        objectMapper.registerModule(new JavaTimeModule());
+    }
 
     public static void main(String[] args) {
         // 从配置文件读取配置
         Properties config = loadConfig();
+        // 解析 field.replace 配置
+        Map<String, String> fieldReplaceMap = parseFieldReplace(config.getProperty("field.replace", ""));
         String curlCommand = config.getProperty("curl.command");
         int successCode = Integer.parseInt(config.getProperty("code.success", "1"));
         String dataKey = config.getProperty("data.key", "data");
@@ -77,8 +82,8 @@ public class GenTable {
                     String tableName = extractTableName(config, className, curlCommand);
                     // 添加表名前缀
                     tableName = tablePrefix + tableName;
-                    // 生成实体类
-                    Class<?> entityClass = generateEntityClass(dataList.get(0), idField, className, tableName, entityFilePath, classFilePath);
+                    // 生成实体类，传入 fieldReplaceMap
+                    Class<?> entityClass = generateEntityClass(dataList.get(0), idField, className, tableName, entityFilePath, classFilePath, fieldReplaceMap);
 
                     // 动态配置 Hibernate
                     Configuration hibernateConfig = new Configuration().configure();
@@ -124,6 +129,11 @@ public class GenTable {
         String method = extractMethodFromCurl(curlCommand);
         // 提取请求头
         Map<String, String> headers = extractHeadersFromCurl(curlCommand);
+        // 提取 Cookie
+        String cookie = extractCookieFromCurl(curlCommand);
+        if (!cookie.isEmpty()) {
+            headers.put("Cookie", cookie);
+        }
         // 提取请求体
         String body = extractBodyFromCurl(curlCommand);
 
@@ -136,7 +146,7 @@ public class GenTable {
             connection.setRequestProperty(entry.getKey(), entry.getValue());
         }
 
-        if (method.equalsIgnoreCase("POST") || method.equalsIgnoreCase("PUT")) {
+        if (method.equalsIgnoreCase("POST") || method.equalsIgnoreCase("PUT") || method.equalsIgnoreCase("PATCH")) {
             connection.setDoOutput(true);
             try (OutputStream os = connection.getOutputStream()) {
                 byte[] input = body.getBytes("utf-8");
@@ -195,7 +205,29 @@ public class GenTable {
     }
 
     private static String extractBodyFromCurl(String curlCommand) {
-        Pattern pattern = Pattern.compile("-d\\s+['\"]([^'\"]+)['\"]");
+        // 先将多行的 curl 命令合并为一行
+        String singleLineCommand = curlCommand.replaceAll("\\\\\\s*\n", "");
+
+        // 先尝试提取 --data-raw
+        // 匹配单引号或双引号包裹的内容，允许内容中包含相应引号的转义形式
+        Pattern dataRawPattern = Pattern.compile("--data-raw\\s+(['\"])((?:\\\\\\1|(?!\\1).)*)\\1");
+        Matcher dataRawMatcher = dataRawPattern.matcher(singleLineCommand);
+        if (dataRawMatcher.find()) {
+            return dataRawMatcher.group(2);
+        }
+
+        // 若没有 --data-raw，再尝试提取 -d
+        Pattern dataPattern = Pattern.compile("-d\\s+(['\"])((?:\\\\\\1|(?!\\1).)*)\\1");
+        Matcher dataMatcher = dataPattern.matcher(singleLineCommand);
+        if (dataMatcher.find()) {
+            return dataMatcher.group(2);
+        }
+
+        return "";
+    }
+
+    private static String extractCookieFromCurl(String curlCommand) {
+        Pattern pattern = Pattern.compile("-b\\s+['\"]([^'\"]+)['\"]");
         Matcher matcher = pattern.matcher(curlCommand);
         if (matcher.find()) {
             return matcher.group(1);
@@ -262,12 +294,11 @@ public class GenTable {
         return "generated_entity";
     }
 
-    private static Class<?> generateEntityClass(Map<String, Object> data, String idField, String className, String tableName, String entityFilePath, String classFilePath) throws IOException, ClassNotFoundException {
+    private static Class<?> generateEntityClass(Map<String, Object> data, String idField, String className, String tableName, String entityFilePath, String classFilePath, Map<String, String> fieldReplaceMap) throws IOException, ClassNotFoundException {
         String packageName = "cn.iocoder.yudao.module.star.service.edu.best";
         String javaFilePath = entityFilePath + "/" + packageName.replace('.', '/') + "/" + className + ".java";
 
         File entityFile = new File(javaFilePath);
-        System.out.println("检查文件是否存在: " + entityFile.getAbsolutePath());
         if (!entityFile.exists()) {
             File parentDir = entityFile.getParentFile();
             if (parentDir != null && !parentDir.exists()) {
@@ -285,9 +316,7 @@ public class GenTable {
         entityContent.append("import javax.persistence.Entity;\n");
         entityContent.append("import javax.persistence.Table;\n");
         entityContent.append("import javax.persistence.Id;\n");
-//        entityContent.append("import javax.persistence.GeneratedValue;\n");
-//        entityContent.append("import javax.persistence.GenerationType;\n");
-        entityContent.append("import javax.persistence.Column;\n"); // 新增导入 Column 注解
+        entityContent.append("import javax.persistence.Column;\n");
         entityContent.append("import org.hibernate.annotations.GenericGenerator;\n");
         entityContent.append("import lombok.Data;\n\n");
 
@@ -300,20 +329,21 @@ public class GenTable {
             String fieldName = entry.getKey();
             String fieldType = getJavaType(entry.getValue());
 
+            // 检查是否需要替换表字段映射
+            String columnName = fieldReplaceMap.getOrDefault(fieldName, fieldName);
+
             if (fieldName.equals(idField)) {
                 entityContent.append("    @Id\n");
                 if (fieldType.equals("String")) {
                     // 如果 id 是 String 类型，使用 UUID 生成策略
-              //      entityContent.append("    @GeneratedValue(generator = \"uuid2\")\n");
-                //    entityContent.append("    @GenericGenerator(name = \"uuid2\", strategy = \"uuid2\")\n");
                 } else {
                     entityContent.append("    @GeneratedValue(strategy = GenerationType.IDENTITY)\n");
                 }
                 // 主键通常不为 null
-                entityContent.append("    @Column(nullable = false)\n");
+                entityContent.append("    @Column(name = \"").append(columnName).append("\", nullable = false)\n");
             } else {
                 // 非主键字段允许为 null
-                entityContent.append("    @Column(nullable = true)\n");
+                entityContent.append("    @Column(name = \"").append(columnName).append("\", nullable = true)\n");
             }
             entityContent.append("    private ").append(fieldType).append(" ").append(fieldName).append(";\n\n");
         }
@@ -325,19 +355,8 @@ public class GenTable {
             writer.flush();
         }
 
-        // 读取文件内容
-        StringBuilder fileContent = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new FileReader(javaFilePath))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                fileContent.append(line).append("\n");
-            }
-        }
-
-        System.out.println("从文件 " + javaFilePath + " 读取到的内容如下：\n" + fileContent);
-
         // 动态编译 Java 文件到指定目录
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        javax.tools.JavaCompiler compiler = javax.tools.ToolProvider.getSystemJavaCompiler();
         File classPathDir = new File(classFilePath);
         if (!classPathDir.exists() && !classPathDir.mkdirs()) {
             throw new IOException("无法创建编译输出目录: " + classFilePath);
@@ -389,7 +408,7 @@ public class GenTable {
                     if (fieldValue != null && (fieldValue instanceof List || fieldValue instanceof Map || fieldValue.getClass().isArray())) {
                         try {
                             fieldValue = objectMapper.writeValueAsString(fieldValue);
-                        } catch (JsonProcessingException e) {
+                        } catch (Exception e) {
                             System.err.println("转换 " + fieldName + " 为 JSON 字符串时出错: " + e.getMessage());
                             fieldValue = "";
                         }
@@ -412,7 +431,7 @@ public class GenTable {
                             if (fieldValue != null && (fieldValue instanceof List || fieldValue instanceof Map || fieldValue.getClass().isArray())) {
                                 try {
                                     fieldValue = objectMapper.writeValueAsString(fieldValue);
-                                } catch (JsonProcessingException e) {
+                                } catch (Exception e) {
                                     System.err.println("转换 " + fieldName + " 为 JSON 字符串时出错: " + e.getMessage());
                                     fieldValue = "";
                                 }
@@ -434,7 +453,6 @@ public class GenTable {
         }
     }
 
-
     private static void writeCurlCommandToFile(String curlCommand, String className, String resourceFilePath) throws IOException {
         File resourceDir = new File(resourceFilePath);
         if (!resourceDir.exists()) {
@@ -449,9 +467,23 @@ public class GenTable {
         }
         System.out.println("curl.command 已写入文件: " + filePath);
     }
-    private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    static {
-        objectMapper.registerModule(new JavaTimeModule());
+    /**
+     * 解析 field.replace 配置字符串
+     * @param fieldReplaceStr 配置字符串
+     * @return 键值对映射
+     */
+    private static Map<String, String> parseFieldReplace(String fieldReplaceStr) {
+        Map<String, String> fieldReplaceMap = new HashMap<>();
+        if (!fieldReplaceStr.isEmpty()) {
+            String[] pairs = fieldReplaceStr.split(",");
+            for (String pair : pairs) {
+                String[] keyValue = pair.split("\\|");
+                if (keyValue.length == 2) {
+                    fieldReplaceMap.put(keyValue[0].trim(), keyValue[1].trim());
+                }
+            }
+        }
+        return fieldReplaceMap;
     }
 }
