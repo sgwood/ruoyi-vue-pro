@@ -66,7 +66,7 @@ public class GenTable {
                 Object data = responseMap.get(dataKey);
                 List<Map<String, Object>> dataList = new ArrayList<>();
 
-                if (listKey != null && data instanceof Map) {
+                if (listKey != null && !listKey.isEmpty() && data instanceof Map) {
                     Object listObj = ((Map<?, ?>) data).get(listKey);
                     if (listObj instanceof List) {
                         dataList = (List<Map<String, Object>>) listObj;
@@ -77,13 +77,20 @@ public class GenTable {
                     dataList.add((Map<String, Object>) data);
                 }
 
+                System.out.println("data list size:"+dataList.size());
                 if (!dataList.isEmpty()) {
                     // 提取表名
                     String tableName = extractTableName(config, className, curlCommand);
                     // 添加表名前缀
                     tableName = tablePrefix + tableName;
-                    // 生成实体类，传入 fieldReplaceMap
-                    Class<?> entityClass = generateEntityClass(dataList.get(0), idField, className, tableName, entityFilePath, classFilePath, fieldReplaceMap);
+
+                    // 找出 dataList 里元素数量最多的子项
+                    Map<String, Object> maxSizeItem = dataList.stream()
+                        .max(Comparator.comparingInt(Map::size))
+                        .orElse(dataList.get(0));
+
+                    // 生成实体类，传入元素数量最多的子项
+                    Class<?> entityClass = generateEntityClass(maxSizeItem, idField, className, tableName, entityFilePath, classFilePath, fieldReplaceMap);
 
                     // 动态配置 Hibernate
                     Configuration hibernateConfig = new Configuration().configure();
@@ -98,6 +105,10 @@ public class GenTable {
                     // 将 curl.command 写入文件
                     writeCurlCommandToFile(curlCommand, className, resourceFilePath);
                 }
+            } else {
+                // 当响应码不等于成功码时，获取并提示 message 信息
+                String message = responseMap.containsKey("message") ? (String) responseMap.get("message") : "未知错误";
+                System.err.println("请求失败，错误信息: " + message);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -179,29 +190,66 @@ public class GenTable {
         throw new IllegalArgumentException("无法从 curl 命令中提取 URL");
     }
 
-    private static String extractMethodFromCurl(String curlCommand) {
-        Pattern pattern = Pattern.compile("-X\\s+([^\\s]+)");
-        Matcher matcher = pattern.matcher(curlCommand);
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-        return "GET";
-    }
-
     private static Map<String, String> extractHeadersFromCurl(String curlCommand) {
         Map<String, String> headers = new HashMap<>();
-        Pattern pattern = Pattern.compile("-H\\s+['\"]([^'\"]+)['\"]");
-        Matcher matcher = pattern.matcher(curlCommand);
-        while (matcher.find()) {
-            String header = matcher.group(1);
-            int colonIndex = header.indexOf(':');
-            if (colonIndex != -1) {
-                String key = header.substring(0, colonIndex).trim();
-                String value = header.substring(colonIndex + 1).trim();
-                headers.put(key, value);
-            }
+        // 优化正则表达式，支持匹配含转义字符的内容
+        Pattern headerPattern = Pattern.compile("(--header|-H)\\s+(['\"])(.*?)\\2");
+        Matcher headerMatcher = headerPattern.matcher(curlCommand);
+        while (headerMatcher.find()) {
+            processHeader(headers, headerMatcher.group(3));
         }
         return headers;
+    }
+
+    private static void processHeader(Map<String, String> headers, String header) {
+        int colonIndex = header.indexOf(':');
+        if (colonIndex != -1) {
+            String key = header.substring(0, colonIndex).trim();
+            String value = header.substring(colonIndex + 1).trim();
+            // 去除首尾可能多余的空白字符，保留双引号
+            value = value.replaceAll("^\\s+|\\s+$", "");
+            if (!key.isEmpty() && !value.isEmpty()) {
+                headers.put(key, value);
+            } else {
+                System.err.println("无效的请求头，键或值为空: " + header);
+                System.err.println("键: " + key + ", 值: " + value);
+            }
+        } else {
+            System.err.println("无效的请求头格式，缺少冒号分隔符: " + header);
+        }
+    }
+
+    private static String extractMethodFromCurl(String curlCommand) {
+        // 先检查是否有 --data-raw、-d 或 --data 参数，有则设为 POST
+        if (curlCommand.contains("--data-raw ") || curlCommand.contains("-d ") || curlCommand.contains("--data ")) {
+            return "POST";
+        }
+
+        // 先尝试提取 --request 参数
+        Pattern requestPattern = Pattern.compile("--request\\s+([^\\s]+)");
+        Matcher requestMatcher = requestPattern.matcher(curlCommand);
+        if (requestMatcher.find()) {
+            String method = requestMatcher.group(1).toUpperCase();
+            // 验证请求方法是否合法
+            if (Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS").contains(method)) {
+                return method;
+            }
+            throw new IllegalArgumentException("不支持的请求方法: " + method);
+        }
+
+        // 若 --request 不存在，再尝试提取 -X 参数
+        Pattern xPattern = Pattern.compile("-X\\s+([^\\s]+)");
+        Matcher xMatcher = xPattern.matcher(curlCommand);
+        if (xMatcher.find()) {
+            String method = xMatcher.group(1).toUpperCase();
+            if (Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS").contains(method)) {
+                return method;
+            }
+            throw new IllegalArgumentException("不支持的请求方法: " + method);
+        }
+
+        // 默认使用 GET 方法
+        return "GET";
     }
 
     private static String extractBodyFromCurl(String curlCommand) {
@@ -209,20 +257,29 @@ public class GenTable {
         String singleLineCommand = curlCommand.replaceAll("\\\\\\s*\n", "");
 
         // 先尝试提取 --data-raw
-        // 匹配单引号或双引号包裹的内容，允许内容中包含相应引号的转义形式
-        Pattern dataRawPattern = Pattern.compile("--data-raw\\s+(['\"])((?:\\\\\\1|(?!\\1).)*)\\1");
-        Matcher dataRawMatcher = dataRawPattern.matcher(singleLineCommand);
-        if (dataRawMatcher.find()) {
-            return dataRawMatcher.group(2);
+        String body = extractDataByPattern(singleLineCommand, "--data-raw");
+        if (!body.isEmpty()) {
+            return body;
         }
 
-        // 若没有 --data-raw，再尝试提取 -d
-        Pattern dataPattern = Pattern.compile("-d\\s+(['\"])((?:\\\\\\1|(?!\\1).)*)\\1");
+        // 若 --data-raw 不存在，再尝试提取 -d
+        body = extractDataByPattern(singleLineCommand, "-d");
+        if (!body.isEmpty()) {
+            return body;
+        }
+
+        // 若 -d 不存在，再尝试提取 --data
+        body = extractDataByPattern(singleLineCommand, "--data");
+        return body;
+    }
+
+    private static String extractDataByPattern(String singleLineCommand, String flag) {
+        // 匹配单引号或双引号包裹的内容，允许内容中包含相应引号的转义形式
+        Pattern dataPattern = Pattern.compile(Pattern.quote(flag) + "\\s+(['\"])((?:\\\\\\1|(?!\\1).)*)\\1");
         Matcher dataMatcher = dataPattern.matcher(singleLineCommand);
         if (dataMatcher.find()) {
             return dataMatcher.group(2);
         }
-
         return "";
     }
 
@@ -329,6 +386,9 @@ public class GenTable {
             String fieldName = entry.getKey();
             String fieldType = getJavaType(entry.getValue());
 
+            if(fieldName.equals("sort")) {
+                fieldType="Integer";
+            }
             // 检查是否需要替换表字段映射
             String columnName = fieldReplaceMap.getOrDefault(fieldName, fieldName);
 
@@ -337,7 +397,7 @@ public class GenTable {
                 if (fieldType.equals("String")) {
                     // 如果 id 是 String 类型，使用 UUID 生成策略
                 } else {
-                    entityContent.append("    @GeneratedValue(strategy = GenerationType.IDENTITY)\n");
+                   // entityContent.append("    @GeneratedValue(strategy = GenerationType.IDENTITY)\n");
                 }
                 // 主键通常不为 null
                 entityContent.append("    @Column(name = \"").append(columnName).append("\", nullable = false)\n");
@@ -379,7 +439,7 @@ public class GenTable {
     }
 
     private static String getJavaType(Object value) {
-        if (value instanceof Integer) {
+        if (value instanceof Integer ) {
             return "Integer";
         } else if (value instanceof Long) {
             return "Long";
