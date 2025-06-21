@@ -22,7 +22,7 @@ public class TotalSchool {
     private String banner;
 
     @Id
-    @Column(name = "id", nullable = false)
+    @Column(name = "id", nullable = true)
     private String id;
 
     @Column(name = "state", nullable = true)
@@ -34,4 +34,7 @@ public class TotalSchool {
     @Column(name = "url", nullable = true)
     private String url;
 
+    // 添加 total 字段
+    @Column(name = "total", nullable = true)
+    private Integer total; // 根据实际情况调整类型
 }
