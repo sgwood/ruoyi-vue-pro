@@ -52,4 +52,25 @@ public class School {
     @Column(name = "countryAreaName", nullable = true)
     private String countryAreaName;
 
+    private Integer isWebSite;
+
+    private String initData;
+
+    private String schoolProfile;
+
+    private String schoolAlumnus;
+
+    private String photo;
+
+    private String detail;
+
+//    private String admissionInfo;
+//
+//    private String applicationAgency;
+//
+//    private String commonAppData;
+    
+    private String major;
+
+
 }
