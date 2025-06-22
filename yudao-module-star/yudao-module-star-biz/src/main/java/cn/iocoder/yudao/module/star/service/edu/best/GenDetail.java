@@ -100,7 +100,7 @@ public class GenDetail {
                 }
 
                 // 动态延迟 4 到 8 秒
-                int delay = ThreadLocalRandom.current().nextInt(1000, 3001);
+                int delay = ThreadLocalRandom.current().nextInt(1500, 3001);
                 Thread.sleep(delay);
             }
         } catch (Exception e) {
