@@ -386,7 +386,7 @@ public class GenTable {
             String fieldName = entry.getKey();
             String fieldType = getJavaType(entry.getValue());
 
-            if(fieldName.equals("sort")) {
+            if(fieldName.equals("sort") || fieldName.equals("maxLength")) {
                 fieldType="Integer";
             }
             // 检查是否需要替换表字段映射
