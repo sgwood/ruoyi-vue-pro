@@ -23,8 +23,8 @@ public class GenDetail {
     private static final String SCHOOL_ALUMNUS_URL = "https://gzkxcas.applyunis.com/newApi/college-encyclopedia/school/detail/getSchoolAlumnus?id=";
     private static final String PHOTO_URL = "https://gzkxcas.applyunis.com/newApi/college-encyclopedia/school/detail/photo?id=";
     private static final String MAJOR_URL = "https://gzkxcas.applyunis.com/newApi/college-encyclopedia/school/major";
-    private static final String BEARER_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRXZWNoYXRPbk9mZiI6MSwidXNlcl9uYW1lIjoiNjg1NmRmYTJkYzcwZTljZTY1MzZlYmViIiwidGVuYW50RW1haWxPbk9mZiI6MCwibGFuZ3VhZ2UiOiJjbiIsInRlbmFudFNuYW1lIjoi5bm_5bee56eR5a2m5Z-O54ix6I6O5aSW57GN5Lq65ZGY5a2Q5aWz5a2m5qChIiwiY2xpZW50X2lkIjoiYmVzdHViIiwic3R1ZGVudElkIjoiIiwidGVuYW50U21zT25PZmYiOjAsImxvZ2luTG9nSWQiOiI2ODU3M2FlNGRjNzBlOWNlNjUzNmVkODQiLCJvYXV0aElkIjoiNjg1NmRmYTJkYzcwZTljZTY1MzZlYmViIiwidGVuYW50RW5hbWUiOiIiLCJzY29wZSI6WyJhbGwiXSwidGVuYW50QWxsTmFtZSI6IuW5v-W3nuenkeWtpuWfjueIseiOjuWkluexjeS6uuWRmOWtkOWls-Wtpuagoe-8iDHvvIkiLCJyb2xlQWxpYXNMaXN0IjoiUk9MRV9BRE1JTiIsIm90aGVyQWxpYXMiOiJST0xFX0FETUlOIiwiaWQiOiI2ODRmODFhMzlhYzgwOTQxYjJiNWNlOGMiLCJleHAiOjE3NTA1ODMxNzIsImp0aSI6ImE2YzYwODJkLTgwNzEtNDM4OS05YzM0LTU0NDY1MThmNTllYiIsImlzRmlyc3RMb2dpbiI6MCwicm9sZUlkIjoiNWFjMzUwMDJhZjJmZjViNGM5ODc1YmJhIiwicm9sZUFsaWFzIjoiUk9MRV9BRE1JTiIsInNlc3Npb25JZCI6IjY4NTZkZmEyZGM3MGU5Y2U2NTM2ZWJlYiIsImRvbWFpblVybCI6Imh0dHBzOi8vZ3preGNhcy5hcHBseXVuaXMuY29tIiwiYXV0aG9yaXRpZXMiOlsiUk9MRV9BRE1JTiJdLCJjdXN0b21Eb21haW4iOiIiLCJvdGhlckFsaWFzTGlzdCI6IlJPTEVfQURNSU4iLCJyb2xlSWRzIjoiNWFjMzUwMDJhZjJmZjViNGM5ODc1YmJhIiwib3RoZXJUZW5hbnRJZCI6IiIsImRvbWFpbiI6Imd6a3hjYXMiLCJuYW1lIjoi5b2t5bu256aPIiwidGVuYW50SWQiOiI2ODRiYTZlMDlhYzgwOTQxYjJiNWNhZGMifQ.hdCCymj9nHu04XsqM55ROqr8dvbagNmuRjhzKaEqGMc";
-    private static final String JSESSIONID = "FECA198C833C2701009F8BADFA0703CE";
+    private static final String BEARER_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZW5hbnRXZWNoYXRPbk9mZiI6MSwidXNlcl9uYW1lIjoiNjg1N2RmYjNkYzcwZTljZTY1MzcwMTdmIiwidGVuYW50RW1haWxPbk9mZiI6MCwibGFuZ3VhZ2UiOiJjbiIsInRlbmFudFNuYW1lIjoi5bm_5bee56eR5a2m5Z-O54ix6I6O5aSW57GN5Lq65ZGY5a2Q5aWz5a2m5qChIiwiY2xpZW50X2lkIjoiYmVzdHViIiwic3R1ZGVudElkIjoiIiwidGVuYW50U21zT25PZmYiOjAsImxvZ2luTG9nSWQiOiI2ODU3ZGZmMWRjNzBlOWNlNjUzNzAxODgiLCJvYXV0aElkIjoiNjg1N2RmYjNkYzcwZTljZTY1MzcwMTdmIiwidGVuYW50RW5hbWUiOiIiLCJzY29wZSI6WyJhbGwiXSwidGVuYW50QWxsTmFtZSI6IuW5v-W3nuenkeWtpuWfjueIseiOjuWkluexjeS6uuWRmOWtkOWls-Wtpuagoe-8iDHvvIkiLCJyb2xlQWxpYXNMaXN0IjoiUk9MRV9BRE1JTiIsIm90aGVyQWxpYXMiOiJST0xFX0FETUlOIiwiaWQiOiI2ODRmODFhMzlhYzgwOTQxYjJiNWNlOGMiLCJleHAiOjE3NTA2MjU0MjUsImp0aSI6ImM1ODY1MTEyLWNjMmMtNDZmNS1iNDMxLWZmZjMwYjJlMDEyNSIsImlzRmlyc3RMb2dpbiI6MCwicm9sZUlkIjoiNWFjMzUwMDJhZjJmZjViNGM5ODc1YmJhIiwicm9sZUFsaWFzIjoiUk9MRV9BRE1JTiIsInNlc3Npb25JZCI6IjY4NTdkZmIzZGM3MGU5Y2U2NTM3MDE3ZiIsImRvbWFpblVybCI6Imh0dHBzOi8vZ3preGNhcy5hcHBseXVuaXMuY29tIiwiYXV0aG9yaXRpZXMiOlsiUk9MRV9BRE1JTiJdLCJjdXN0b21Eb21haW4iOiIiLCJvdGhlckFsaWFzTGlzdCI6IlJPTEVfQURNSU4iLCJyb2xlSWRzIjoiNWFjMzUwMDJhZjJmZjViNGM5ODc1YmJhIiwib3RoZXJUZW5hbnRJZCI6IiIsImRvbWFpbiI6Imd6a3hjYXMiLCJuYW1lIjoi5b2t5bu256aPIiwidGVuYW50SWQiOiI2ODRiYTZlMDlhYzgwOTQxYjJiNWNhZGMifQ.Hw9Ko6OyttA5W2HOEEU1RfbHhOXcr-CC-Pz8fKXOJA4";
+    private static final String JSESSIONID = "C7FB317F664BE31C2D4F00565FFC2E59";
 
     public static void main(String[] args) {
         // 配置 Hibernate
@@ -100,7 +100,7 @@ public class GenDetail {
                 }
 
                 // 动态延迟 4 到 8 秒
-                int delay = ThreadLocalRandom.current().nextInt(4000, 8001);
+                int delay = ThreadLocalRandom.current().nextInt(1000, 3001);
                 Thread.sleep(delay);
             }
         } catch (Exception e) {
