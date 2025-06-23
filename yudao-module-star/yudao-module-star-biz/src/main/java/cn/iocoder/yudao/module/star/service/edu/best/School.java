@@ -64,13 +64,27 @@ public class School {
 
     private String detail;
 
-//    private String admissionInfo;
-//
-//    private String applicationAgency;
-//
+    private String admissionInfo;
+
+   private String applicationAgency;
+
 //    private String commonAppData;
     
     private String major;
+
+
+    private String SchoolPrice;
+
+    private String document;
+
+
+    private String resource;
+
+
+    private String detailedList;
+
+
+
 
 
 }
