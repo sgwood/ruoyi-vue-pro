@@ -10,8 +10,8 @@
     <modules>
         <module>yudao-dependencies</module>
         <module>yudao-framework</module>
-        <!-- Server 主项目 -->
-        <module>yudao-server</module>
+
+
         <!-- 各种 module 拓展 -->
         <module>yudao-module-system</module>
         <module>yudao-module-infra</module>
@@ -25,7 +25,8 @@
                 <module>yudao-module-erp</module>
         <module>yudao-module-iot</module>
         <module>yudao-module-star</module>
-
+        <!-- Server 主项目 -->
+        <module>yudao-server</module>
         <!-- AI 大模型的开启，请参考 https://doc.iocoder.cn/ai/build/ 文档，对 JDK 版本要要求！
        <module>yudao-module-ai</module>-->
     </modules>
