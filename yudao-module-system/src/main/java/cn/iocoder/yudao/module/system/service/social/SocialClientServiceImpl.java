@@ -12,6 +12,7 @@ import cn.binarywang.wx.miniapp.constant.WxMaConstants;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.Assert;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.DesensitizedUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.ReflectUtil;
@@ -50,6 +51,7 @@ import me.zhyd.oauth.config.AuthConfig;
 import me.zhyd.oauth.model.AuthCallback;
 import me.zhyd.oauth.model.AuthResponse;
 import me.zhyd.oauth.model.AuthUser;
+import me.zhyd.oauth.request.AuthAlipayRequest;
 import me.zhyd.oauth.request.AuthRequest;
 import me.zhyd.oauth.utils.AuthStateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,6 +102,15 @@ public class SocialClientServiceImpl implements SocialClientService {
      */
     @Value("${yudao.wxa-subscribe-message.miniprogram-state:formal}")
     public String miniprogramState;
+
+    /**
+     * 上传发货信息重试间隔（毫秒），数组长度即重试次数；总等待最坏 1 + 2 + 4 = 7 秒，覆盖微信支付回调的常见延迟
+     */
+    private static final long[] UPLOAD_SHIPPING_INFO_RETRY_BACKOFF_MILLIS = {1000, 2000, 4000};
+    /**
+     * 微信错误码：支付单不存在
+     */
+    private static final int WX_ERR_CODE_PAY_ORDER_NOT_EXIST = 10060001;
 
     @SuppressWarnings("SpringJavaAutowiredFieldsWarningInspection")
     @Autowired(required = false) // 由于 justauth.enable 配置项，可以关闭 AuthRequestFactory 的功能，所以这里只能不强制注入
@@ -168,7 +179,7 @@ public class SocialClientServiceImpl implements SocialClientService {
     public AuthUser getAuthUser(Integer socialType, Integer userType, String code, String state) {
         // 构建请求
         AuthRequest authRequest = buildAuthRequest(socialType, userType);
-        AuthCallback authCallback = AuthCallback.builder().code(code).state(state).build();
+        AuthCallback authCallback = AuthCallback.builder().code(code).auth_code(code).state(state).build();
         // 执行请求
         AuthResponse<?> authResponse = authRequest.login(authCallback);
         log.info("[getAuthUser][请求社交平台 type({}) request({}) response({})]", socialType,
@@ -204,7 +215,15 @@ public class SocialClientServiceImpl implements SocialClientService {
             if (client.getAgentId() != null) { // 如果有 agentId 则修改 agentId
                 newAuthConfig.setAgentId(client.getAgentId());
             }
+            // 如果是阿里的小程序
+            if (SocialTypeEnum.ALIPAY_MINI_PROGRAM.getType().equals(socialType)) {
+                return new AuthAlipayRequest(newAuthConfig, client.getPublicKey());
+            }
             // 2.3 设置会 request 里，进行后续使用
+            if (SocialTypeEnum.ALIPAY_MINI_PROGRAM.getType().equals(socialType)) {
+                // 特殊：如果是支付宝的小程序，多了 publicKey 属性，可见 AuthConfig 里的 alipayPublicKey 字段说明
+                return new AuthAlipayRequest(newAuthConfig, client.getPublicKey());
+            }
             ReflectUtil.setFieldValue(request, "config", newAuthConfig);
         }
         return request;
@@ -363,16 +382,26 @@ public class SocialClientServiceImpl implements SocialClientService {
                 .payer(PayerBean.builder().openid(reqDTO.getOpenid()).build())
                 .uploadTime(ZonedDateTime.now().format(UTC_MS_WITH_XXX_OFFSET_FORMATTER))
                 .build();
-        try {
-            WxMaOrderShippingInfoBaseResponse response = service.getWxMaOrderShippingService().upload(request);
-            if (response.getErrCode() != 0) {
-                log.error("[uploadWxaOrderShippingInfo][上传微信小程序发货信息失败：request({}) response({})]", request, response);
-                throw exception(SOCIAL_CLIENT_WEIXIN_MINI_APP_ORDER_UPLOAD_SHIPPING_INFO_ERROR, response.getErrMsg());
+        // 重试机制：解决支付回调与订单信息上传之间的时间差导致的 10060001 错误
+        // 对应 ISSUE：https://gitee.com/zhijiantianya/yudao-cloud/pulls/230
+        // 注意：wx-java 的 upload 内部对 errCode != 0 直接抛 WxErrorException，所以重试判断必须基于异常的 errorCode
+        int maxAttempts = UPLOAD_SHIPPING_INFO_RETRY_BACKOFF_MILLIS.length + 1;
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                WxMaOrderShippingInfoBaseResponse response = service.getWxMaOrderShippingService().upload(request);
+                log.info("[uploadWxaOrderShippingInfo][上传微信小程序发货信息成功：request({}) response({})]", request, response);
+                return;
+            } catch (WxErrorException ex) {
+                if (ex.getError().getErrorCode() == WX_ERR_CODE_PAY_ORDER_NOT_EXIST && attempt < maxAttempts) {
+                    long delayMillis = UPLOAD_SHIPPING_INFO_RETRY_BACKOFF_MILLIS[attempt - 1];
+                    log.warn("[uploadWxaOrderShippingInfo][第 {} 次尝试失败，支付单不存在，{} ms 后重试：request({})]",
+                            attempt, delayMillis, request, ex);
+                    ThreadUtil.sleep(delayMillis);
+                    continue;
+                }
+                log.error("[uploadWxaOrderShippingInfo][上传微信小程序发货信息失败：request({})]", request, ex);
+                throw exception(SOCIAL_CLIENT_WEIXIN_MINI_APP_ORDER_UPLOAD_SHIPPING_INFO_ERROR, ex.getError().getErrorMsg());
             }
-            log.info("[uploadWxaOrderShippingInfo][上传微信小程序发货信息成功：request({}) response({})]", request, response);
-        } catch (WxErrorException ex) {
-            log.error("[uploadWxaOrderShippingInfo][上传微信小程序发货信息失败：request({})]", request, ex);
-            throw exception(SOCIAL_CLIENT_WEIXIN_MINI_APP_ORDER_UPLOAD_SHIPPING_INFO_ERROR, ex.getError().getErrorMsg());
         }
     }
 

@@ -4,7 +4,7 @@ import cn.iocoder.yudao.module.infra.dal.dataobject.codegen.CodegenColumnDO;
 import cn.iocoder.yudao.module.infra.dal.dataobject.codegen.CodegenTableDO;
 import cn.iocoder.yudao.module.infra.enums.codegen.CodegenFrontTypeEnum;
 import cn.iocoder.yudao.module.infra.enums.codegen.CodegenTemplateTypeEnum;
-import org.junit.jupiter.api.Disabled;
+import com.baomidou.mybatisplus.annotation.DbType;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -16,7 +16,6 @@ import java.util.Map;
  *
  * @author 芋道源码
  */
-@Disabled
 public class CodegenEngineVue3Test extends CodegenEngineAbstractTest {
 
     @Test
@@ -28,11 +27,28 @@ public class CodegenEngineVue3Test extends CodegenEngineAbstractTest {
         List<CodegenColumnDO> columns = getColumnList("student");
 
         // 调用
-        Map<String, String> result = codegenEngine.execute(table, columns, null, null);
+        Map<String, String> result = codegenEngine.execute(DbType.MYSQL, table, columns, null, null);
         // 生成测试文件
         //writeResult(result, resourcesPath + "/vue3_one");
         // 断言
         assertResult(result, "/vue3_one");
+    }
+
+    @Test
+    public void testExecute_vue3_one_importEnable() {
+        // 开启 import 开关
+        codegenProperties.setImportEnable(true);
+        codegenEngine.initGlobalBindingMap();
+        // 准备参数
+        CodegenTableDO table = getTable("student")
+                .setFrontType(CodegenFrontTypeEnum.VUE3_ELEMENT_PLUS.getType())
+                .setTemplateType(CodegenTemplateTypeEnum.ONE.getType());
+        List<CodegenColumnDO> columns = getColumnList("student");
+
+        // 调用
+        Map<String, String> result = codegenEngine.execute(DbType.MYSQL, table, columns, null, null);
+        // 断言
+        assertResult(result, "/vue3_one_importEnable");
     }
 
     @Test
@@ -44,7 +60,7 @@ public class CodegenEngineVue3Test extends CodegenEngineAbstractTest {
         List<CodegenColumnDO> columns = getColumnList("category");
 
         // 调用
-        Map<String, String> result = codegenEngine.execute(table, columns, null, null);
+        Map<String, String> result = codegenEngine.execute(DbType.MYSQL, table, columns, null, null);
         // 生成测试文件
         //writeResult(result, resourcesPath + "/vue3_tree");
         // 断言
@@ -88,7 +104,7 @@ public class CodegenEngineVue3Test extends CodegenEngineAbstractTest {
         List<CodegenColumnDO> teacherColumns = getColumnList("teacher");
 
         // 调用
-        Map<String, String> result = codegenEngine.execute(table, columns,
+        Map<String, String> result = codegenEngine.execute(DbType.MYSQL, table, columns,
                 Arrays.asList(contactTable, teacherTable), Arrays.asList(contactColumns, teacherColumns));
         // 生成测试文件
         //writeResult(result, resourcesPath + path);

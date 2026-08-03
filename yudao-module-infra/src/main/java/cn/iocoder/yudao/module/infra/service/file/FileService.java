@@ -61,6 +61,7 @@ public interface FileService {
      * @return 编号
      */
     Long createFile(FileCreateReqVO createReqVO);
+    FileDO getFile(Long id);
 
     /**
      * 删除文件
@@ -84,5 +85,14 @@ public interface FileService {
      * @return 文件内容
      */
     byte[] getFileContent(Long configId, String path) throws Exception;
+
+    /**
+     * 获得文件
+     *
+     * @param configId 配置编号
+     * @param path     文件路径
+     * @return 文件
+     */
+    FileDO getFileByConfigIdAndPath(Long configId, String path);
 
 }

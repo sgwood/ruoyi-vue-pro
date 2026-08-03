@@ -1,10 +1,11 @@
 package cn.iocoder.yudao.module.infra.controller.admin.file;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.core.util.URLUtil;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.iocoder.yudao.framework.common.util.http.HttpUtils;
 import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.framework.tenant.core.aop.TenantIgnore;
 import cn.iocoder.yudao.module.infra.controller.admin.file.vo.file.*;
@@ -13,6 +14,7 @@ import cn.iocoder.yudao.module.infra.service.file.FileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -26,7 +28,6 @@ import javax.annotation.security.PermitAll;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
@@ -44,6 +45,8 @@ public class FileController {
 
     @PostMapping("/upload")
     @Operation(summary = "上传文件", description = "模式一：后端上传文件")
+    @Parameter(name = "file", description = "文件附件", required = true,
+            schema = @Schema(type = "string", format = "binary"))
     public CommonResult<String> uploadFile(@Valid FileUploadReqVO uploadReqVO) throws Exception {
         MultipartFile file = uploadReqVO.getFile();
         byte[] content = IoUtil.readBytes(file.getInputStream());
@@ -67,6 +70,14 @@ public class FileController {
     @Operation(summary = "创建文件", description = "模式二：前端上传文件：配合 presigned-url 接口，记录上传了上传的文件")
     public CommonResult<Long> createFile(@Valid @RequestBody FileCreateReqVO createReqVO) {
         return success(fileService.createFile(createReqVO));
+    }
+
+    @GetMapping("/get")
+    @Operation(summary = "获得文件")
+    @Parameter(name = "id", description = "编号", required = true)
+    @PreAuthorize("@ss.hasPermission('infra:file:query')")
+    public CommonResult<FileRespVO> getFile(@RequestParam("id") Long id) {
+        return success(BeanUtils.toBean(fileService.getFile(id), FileRespVO.class));
     }
 
     @DeleteMapping("/delete")
@@ -100,10 +111,10 @@ public class FileController {
         if (StrUtil.isEmpty(path)) {
             throw new IllegalArgumentException("结尾的 path 路径必须传递");
         }
-        // 解码，解决中文路径的问题
+        // 解码，解决中文、%、+ 等特殊字符路径的问题
         // https://gitee.com/zhijiantianya/ruoyi-vue-pro/pulls/807/
         // https://gitee.com/zhijiantianya/ruoyi-vue-pro/pulls/1432/
-        path = URLUtil.decode(path, StandardCharsets.UTF_8, false);
+        path = HttpUtils.decodeUrlPath(path);
 
         // 读取内容
         byte[] content = fileService.getFileContent(configId, path);
@@ -112,7 +123,9 @@ public class FileController {
             response.setStatus(HttpStatus.NOT_FOUND.value());
             return;
         }
-        writeAttachment(response, path, content);
+        FileDO file = fileService.getFileByConfigIdAndPath(configId, path);
+        String filename = file != null && StrUtil.isNotEmpty(file.getName()) ? file.getName() : FileUtil.getName(path);
+        writeAttachment(response, filename, content);
     }
 
     @GetMapping("/page")
